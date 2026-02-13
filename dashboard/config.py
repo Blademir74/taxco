@@ -1,9 +1,21 @@
 # -*- coding: utf-8 -*-
-DB_HOST = "localhost"
-DB_PORT = "5432"
-DB_NAME = "taxco_electoral"
-DB_USER = "postgres"
-DB_PASSWORD = "postgres123"
+
+# Importar streamlit para acceder a secrets
+try:
+    import streamlit as st
+    # Usar secrets de Streamlit Cloud si están disponibles
+    DB_HOST = st.secrets.get("DB_HOST", "localhost")
+    DB_PORT = st.secrets.get("DB_PORT", "5432")
+    DB_NAME = st.secrets.get("DB_NAME", "taxco_electoral")
+    DB_USER = st.secrets.get("DB_USER", "postgres")
+    DB_PASSWORD = st.secrets.get("DB_PASSWORD", "postgres123")
+except:
+    # Valores por defecto para desarrollo local
+    DB_HOST = "localhost"
+    DB_PORT = "5432"
+    DB_NAME = "taxco_electoral"
+    DB_USER = "postgres"
+    DB_PASSWORD = "postgres123"
 
 MUNICIPIO_ID = 56
 MUNICIPIO_NOMBRE = "Taxco de Alarcon"
@@ -16,33 +28,20 @@ MAPEO_ELECCIONES = {2018: 1, 2021: 2, 2024: 3}
 PRESUPUESTO_FAISMUN_2025 = 203_700_000
 
 COLORES_PARTIDOS = {
-    'MORENA': '#B8242B',
+    'MORENA': '#8B242B',
     'PAN': '#0066CC',
-    'PRI': '#FF0000',
-    'PRD': '#FFD700',
-    'PT': '#FF0000',
-    'PVEM': '#00A859',
-    'MC': '#FF6600',
-    'NA': '#00CCFF',
-    'PES': '#9B26AF',
-    'RSP': '#9C27B0',
-    'FXM': '#673AB7',
-    'INDEPENDIENTE': '#888888',
-    'SIN DATOS': '#CCCCCC'
+    'PRI': '#E30613',
+    'PRD': '#FFDD00',
+    'PVEM': '#76B82A',
+    'PT': '#DC143C',
+    'MC': '#FF7F00',
+    'NULO': '#CCCCCC',
+    'NO_REGISTRADO': '#999999'
 }
 
-CENTRO_MAPA = {"lat": 18.557, "lon": -99.605}
-ZOOM_INICIAL = 10.5
-
-UMBRAL_PARTICIPACION_ALTA = 100
-UMBRAL_REZAGO_ALTO = 40
-UMBRAL_ISC_DEFICIENTE = 40
-UMBRAL_ISC_BUENO = 60
-UMBRAL_ISC_EXCELENTE = 75
-
-PESO_ENCUESTA_CASA = 1.0
-PESO_FORO_CIUDADANO = 0.85
-PESO_REUNION_VECINAL = 0.80
-PESO_REDES_SOCIALES = 0.60
-PESO_DENUNCIA_911 = 0.95
-PESO_SOLICITUD_OFICIAL = 0.90
+CONFIG_VISUALIZACION = {
+    'mapa_centro': [18.5569, -99.6450],  # Coordenadas de Taxco
+    'mapa_zoom': 12,
+    'altura_grafica': 400,
+    'ancho_grafica': 800
+}
