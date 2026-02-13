@@ -1,33 +1,20 @@
-# -*- coding: utf-8 -*-
-import pandas as pd
-import geopandas as gpd
 from sqlalchemy import create_engine
-from sqlalchemy.engine.url import URL
-import psycopg2
-from config import *
-import json
-from shapely.geometry import shape
-
-# ============================================
-# CONEXIÓN SEGURA (sin DSN, UTF-8 forzado)
-# ============================================
-def get_connection():
-    """Crea conexión directa con psycopg2, parámetros nominativos."""
-    return psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        client_encoding='UTF8'
-    )
+from urllib.parse import quote_plus
 
 def get_engine():
-    """SQLAlchemy engine usando creator (evita DSN)."""
-    return create_engine(
-        'postgresql+psycopg2://',
-        creator=get_connection
-    )
+    db_host = st.secrets["DB_HOST"]
+    db_port = st.secrets["DB_PORT"]
+    db_name = st.secrets["DB_NAME"]
+    db_user = st.secrets["DB_USER"]
+    db_password = st.secrets["DB_PASSWORD"]
+
+    # Escapa la contraseña por si tiene caracteres especiales
+    password_encoded = quote_plus(db_password)
+
+    # Construye la URL con SSL requerido
+    database_url = f"postgresql://{db_user}:{password_encoded}@{db_host}:{db_port}/{db_name}?sslmode=require"
+    engine = create_engine(database_url, connect_args={'client_encoding': 'utf8'})
+    return engine
 
 # ============================================
 # MAPEO ELECCIONES (desde config.py)
