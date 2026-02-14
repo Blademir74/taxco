@@ -7,7 +7,7 @@ def get_engine():
     from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
     
     # Escape la contraseña por si tiene caracteres especiales
-        password_encoded = quote_plus(DB_PASSWORD)
+    password_encoded = quote_plus(DB_PASSWORD)
 
     # Construye la URL con SSL requerido
     database_url = f"postgresql://{db_user}:{password_encoded}@{db_host}:{db_port}/{db_name}?sslmode=require"
