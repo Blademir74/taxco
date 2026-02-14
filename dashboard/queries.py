@@ -2,14 +2,12 @@ from sqlalchemy import create_engine
 from urllib.parse import quote_plus
 
 def get_engine():
-    db_host = st.secrets["DB_HOST"]
-    db_port = st.secrets["DB_PORT"]
-    db_name = st.secrets["DB_NAME"]
-    db_user = st.secrets["DB_USER"]
-    db_password = st.secrets["DB_PASSWORD"]
-
-    # Escapa la contraseña por si tiene caracteres especiales
-    password_encoded = quote_plus(db_password)
+    """SQLAlchemy engine usando creator (evita DSN)."""
+    # Importar las variables de config.py que ya maneja st.secrets correctamente
+    from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+    
+    # Escape la contraseña por si tiene caracteres especiales
+        password_encoded = quote_plus(DB_PASSWORD)
 
     # Construye la URL con SSL requerido
     database_url = f"postgresql://{db_user}:{password_encoded}@{db_host}:{db_port}/{db_name}?sslmode=require"
