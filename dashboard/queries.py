@@ -386,7 +386,9 @@ def get_satisfaccion_por_servicio_agregado():
 # ============================================
 
 def get_alertas_conflicto(umbral_rezago=40, umbral_isc=40):
-    engine = get_engine()
+        # TODO: Implementar sin vistas
+    return pd.DataFrame()
+    """engine = get_engine()
     query = """
     SELECT 
         s.seccion,
@@ -409,6 +411,9 @@ def get_acciones_prioritarias_24h(top_n=3):
     Retorna las N secciones con mayor urgencia basada en:
     - Pertenecer al Top 20 por peso electoral (lista nominal)
     - Mayor rezago social
+    # TODO: Implementar sin vistas
+    return pd.DataFrame()
+    """
     - Menor ISC
     """
     engine = get_engine()
