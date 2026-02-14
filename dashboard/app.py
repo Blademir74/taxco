@@ -389,31 +389,8 @@ with st.sidebar:
     st.subheader("⚡ ACCIONES PRIORITARIAS 24h")
     # TODO: Reemplazar con implementación que no use vistas
     # df_acciones = get_acciones_prioritarias_24h(top_n=3)
-    df_acciones = pd.DataFrame()  # DataFrame vacío temporalmente    if not df_acciones.empty:
-        for _, row in df_acciones.iterrows():
-            st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.05); border-left: 4px solid #00d4aa; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 24px;">📍</span>
-                    <span style="font-weight: 600;">Sección {int(row['seccion'])}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 8px;">
-                    <span style="color: #c0c0c0;">Peso electoral</span>
-                    <span style="font-weight: 600;">{row['peso_electoral']:,}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="color: #c0c0c0;">Rezago</span>
-                    <span style="font-weight: 600; color: {'#ff4b4b' if row['rezago'] > 40 else '#ff9800' if row['rezago'] > 20 else '#4caf50'};">{row['rezago']:.1f}%</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="color: #c0c0c0;">ISC</span>
-                    <span style="font-weight: 600; color: {'#ff4b4b' if row['isc'] < 40 else '#ff9800' if row['isc'] < 60 else '#4caf50'};">{row['isc']:.1f}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("No hay secciones prioritarias urgentes.")
-
+    df_acciones = pd.DataFrame()  # DataFrame vacío temporalmente    
+        
 # ============================================
 # TABS PRINCIPALES
 # ============================================
