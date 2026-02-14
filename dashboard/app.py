@@ -387,8 +387,9 @@ with st.sidebar:
     # ========================================
     st.divider()
     st.subheader("⚡ ACCIONES PRIORITARIAS 24h")
-    df_acciones = get_acciones_prioritarias_24h(top_n=3)
-    if not df_acciones.empty:
+    # TODO: Reemplazar con implementación que no use vistas
+    # df_acciones = get_acciones_prioritarias_24h(top_n=3)
+    df_acciones = pd.DataFrame()  # DataFrame vacío temporalmente    if not df_acciones.empty:
         for _, row in df_acciones.iterrows():
             st.markdown(f"""
             <div style="background: rgba(255,255,255,0.05); border-left: 4px solid #00d4aa; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
