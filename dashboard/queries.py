@@ -11,8 +11,9 @@ def get_engine():
     password_encoded = quote_plus(DB_PASSWORD)
 
     # Construye la URL con SSL requerido
-    database_url = f"postgresql://{DB_USER}:{password_encoded}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require"    engine = create_engine(database_url, connect_args={'client_encoding': 'utf8'})
-    return engine
+    database_url = f"postgresql://{DB_USER}:{password_encoded}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require"
+    engine = create_engine(database_url, connect_args={'client_encoding': 'utf8'})    return engine
+        return engine
 
 # ============================================
 # MAPEO ELECCIONES (desde config.py)
