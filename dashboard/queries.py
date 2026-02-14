@@ -1,5 +1,10 @@
 from sqlalchemy import create_engine
 from urllib.parse import quote_plus
+import pandas as pd
+import geopandas as gpd
+import json
+from shapely.geometry import shape
+from config import MUNICIPIO_ID, MAPEO_ELECCIONES
 
 # Dashboard Electoral Taxco 2024 - Queries
 def get_engine():
