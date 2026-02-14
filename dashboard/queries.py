@@ -10,8 +10,7 @@ def get_engine():
     password_encoded = quote_plus(DB_PASSWORD)
 
     # Construye la URL con SSL requerido
-    database_url = f"postgresql://{db_user}:{password_encoded}@{db_host}:{db_port}/{db_name}?sslmode=require"
-    engine = create_engine(database_url, connect_args={'client_encoding': 'utf8'})
+    database_url = f"postgresql://{DB_USER}:{password_encoded}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require"    engine = create_engine(database_url, connect_args={'client_encoding': 'utf8'})
     return engine
 
 # ============================================
