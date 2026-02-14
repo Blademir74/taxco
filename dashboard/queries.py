@@ -388,35 +388,11 @@ def get_satisfaccion_por_servicio_agregado():
 def get_alertas_conflicto(umbral_rezago=40, umbral_isc=40):
         # TODO: Implementar sin vistas
     return pd.DataFrame()
-    """engine = get_engine()
-    query = """
-    SELECT 
-        s.seccion,
-        r.pct_sin_servicios_basicos as rezago,
-        COALESCE(vss.indice_satisfaccion_ciudadana, 50) as isc,
-        s.pk_seccion
-    FROM seccion s
-    LEFT JOIN vw_rezago_secciones r ON r.pk_seccion = s.pk_seccion   -- ← s.pk_seccion explícito
-    LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.pk_seccion = s.pk_seccion  -- ← explícito
-    WHERE s.id_municipio = %(municipio_id)s
-      AND r.pct_sin_servicios_basicos > %(umbral_rezago)s
-      AND COALESCE(vss.indice_satisfaccion_ciudadana, 50) < %(umbral_isc)s
-    ORDER BY r.pct_sin_servicios_basicos DESC, vss.indice_satisfaccion_ciudadana ASC
-    """
-    params = {'municipio_id': MUNICIPIO_ID, 'umbral_rezago': umbral_rezago, 'umbral_isc': umbral_isc}
-    return pd.read_sql(query, engine, params=params)
-
+    
 def get_acciones_prioritarias_24h(top_n=3):
-    """
-    Retorna las N secciones con mayor urgencia basada en:
-    - Pertenecer al Top 20 por peso electoral (lista nominal)
-    - Mayor rezago social
-    # TODO: Implementar sin vistas
+        # TODO: Implementar sin vistas
     return pd.DataFrame()
-    """
-    - Menor ISC
-    """
-    engine = get_engine()
+engine = get_engine()
     query = """
     WITH top20 AS (
         SELECT 
@@ -452,4 +428,5 @@ def get_acciones_prioritarias_24h(top_n=3):
 def get_total_secciones():
     engine = get_engine()
     query = "SELECT COUNT(*) FROM seccion WHERE id_municipio = %s"
-    return pd.read_sql(query, engine, params=(MUNICIPIO_ID,)).iloc[0,0]
+    395
+    (query, engine, params=(MUNICIPIO_ID,)).iloc[0,0]
