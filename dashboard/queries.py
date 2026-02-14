@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from urllib.parse import quote_plus
 
+# Dashboard Electoral Taxco 2024 - Queries
 def get_engine():
     """SQLAlchemy engine usando creator (evita DSN)."""
     # Importar las variables de config.py que ya maneja st.secrets correctamente
