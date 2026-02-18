@@ -8,3 +8,5 @@ requests==2.32.3
 plotly==5.24.1
 geopandas==1.0.1
 shapely==2.0.2
+setuptools==75.8.2
+wheel==0.45.1
