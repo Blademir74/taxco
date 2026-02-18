@@ -11,17 +11,17 @@ from shapely.geometry import shape
 # CONEXIÓN SEGURA — compatible psycopg3
 # ============================================
 def get_engine():
-    """SQLAlchemy engine usando DATABASE_URL del entorno."""
+    """SQLAlchemy engine usando DATABASE_URL del entorno — psycopg3."""
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
-        # Fallback local
         database_url = (
             f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}"
-            f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+            f"@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require"
         )
-    # Asegurar que usa psycopg3
-    database_url = database_url.replace("postgresql://", "postgresql+psycopg://")
+    # Normalizar SIEMPRE a psycopg3
     database_url = database_url.replace("postgresql+psycopg2://", "postgresql+psycopg://")
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     return create_engine(database_url, pool_pre_ping=True)
 
 # ============================================
