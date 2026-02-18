@@ -2,41 +2,27 @@
 import pandas as pd
 import geopandas as gpd
 from sqlalchemy import create_engine
-from sqlalchemy.engine.url import URL
-try:
-    import psycopg2
-except ImportError:
-    import psycopg as psycopg2
+import os
 from config import *
 import json
 from shapely.geometry import shape
-import streamlit as st
+
 # ============================================
-# CONEXIÓN SEGURA (sin DSN, UTF-8 forzado)
+# CONEXIÓN SEGURA — compatible psycopg3
 # ============================================
-def get_connection():
-    """Crea conexión directa con psycopg2, usando DATABASE_URL del entorno si está disponible."""
-    import os
-    database_url = os.getenv("DATABASE_URL")
-    if database_url:
-        # Si hay variable de entorno, úsala directamente (espera que contenga todo: usuario, pass, host, puerto, db)
-        return psycopg2.connect(database_url)
-    else:
-        # Fallback a parámetros locales (para desarrollo)
-        return psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            client_encoding='UTF8'
-        )
 def get_engine():
-    """SQLAlchemy engine usando creator (evita DSN)."""
-    return create_engine(
-        'postgresql+psycopg3://',
-        creator=get_connection
-    )
+    """SQLAlchemy engine usando DATABASE_URL del entorno."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        # Fallback local
+        database_url = (
+            f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}"
+            f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        )
+    # Asegurar que usa psycopg3
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg://")
+    database_url = database_url.replace("postgresql+psycopg2://", "postgresql+psycopg://")
+    return create_engine(database_url, pool_pre_ping=True)
 
 # ============================================
 # MAPEO ELECCIONES (desde config.py)
