@@ -318,7 +318,8 @@ async def crear_invitacion(inv: InvitacionRequest, admin_key: str = Header(...))
     
     # Construir el link (cuando el dashboard esté desplegado, será https://...)
     # En local usamos localhost:8501
-   dashboard_url = os.getenv("DASHBOARD_URL", "https://5mefjgvsuazhayejhm92vk.streamlit.app/") link = f"{dashboard_url}?invite={token}"
+    dashboard_url = os.getenv("DASHBOARD_URL", "https://5mefjgvsuazhayejhm92vk.streamlit.app")
+    link = f"{dashboard_url}?invite={token}"
     return InvitacionResponse(token=token, link=link)
 @app.get("/api/validate-invite/{token}")
 async def validate_invite(token: str):
