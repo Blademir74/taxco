@@ -319,7 +319,8 @@ if invite_token:
     try:
         # Llamar al endpoint de la API para validar el token
         import requests
-        api_url = "http://localhost:8000/api/validate-invite"  # Cambiar por tu URL real
+        api_url = f"{BACKEND_URL}/api/validate-invite"
+        backend_url = f"{BACKEND_URL}/api/exportar-excel"
         response = requests.get(f"{api_url}/{invite_token}")
         if response.status_code == 200:
             data = response.json()
