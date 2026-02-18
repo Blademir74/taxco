@@ -3,7 +3,10 @@ import pandas as pd
 import geopandas as gpd
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
-import psycopg2
+try:
+    import psycopg2
+except ImportError:
+    import psycopg as psycopg2
 from config import *
 import json
 from shapely.geometry import shape
