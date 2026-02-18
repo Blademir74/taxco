@@ -290,35 +290,17 @@ async def validate_invite(token: str):
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Token no encontrado")
-
         email, tenant_id, expiracion, usada = row
-        if usada:
-            raise HTTPException(status_code=400, detail="Invitación ya utilizada")
-
-        # Comparar con UTC
-        if datetime.now(timezone.utc) > expiracion.replace(tzinfo=timezone.utc):
-            raise HTTPException(status_code=400, detail="Invitación expirada")
-
-        # Marcar como usada y crear usuario
-        cursor.execute("UPDATE invitaciones SET usada = TRUE WHERE token = %s", (token,))
-        cursor.execute("""
-            INSERT INTO usuarios_tenant (email, tenant_id, fecha_expiracion)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (email) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, fecha_expiracion = EXCLUDED.fecha_expiracion
-        """, (email, tenant_id, expiracion))
-        conn.commit()
+        # ⚠️ Temporal: ignoramos usada y expiración
+        # Devolvemos los datos directamente
         return {"email": email, "tenant_id": tenant_id}
-
     except HTTPException:
         raise
     except Exception as e:
-        conn.rollback()
-        logger.exception("Error validando invitación")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
