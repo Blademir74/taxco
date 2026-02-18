@@ -14,10 +14,13 @@ import uuid
 from datetime import datetime, timedelta
 from pydantic import BaseModel, EmailStr
 from fastapi import Header, HTTPException
+
+app = FastAPI()
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
-app = FastAPI(title="API de Recolección Territorial - Taxco")
+
 
 # CORS para permitir el frontend
 app.add_middleware(
