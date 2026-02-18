@@ -316,6 +316,7 @@ if isinstance(invite_token, list):
 
 # Si hay token, intentar validarlo
 if invite_token:
+    invite_token = invite_token.strip() 
     try:
         import requests
         backend_url = st.secrets["BACKEND_URL"]  # Lee la variable desde los secrets
