@@ -15,8 +15,12 @@ import streamlit as st
 # CONEXIÓN SEGURA (sin DSN, UTF-8 forzado)
 # ============================================
 def get_connection():
-    if "DATABASE_URL" in st.secrets:
-        return psycopg2.connect(st.secrets["DATABASE_URL"])
+    """Crea conexión directa con psycopg2, usando DATABASE_URL del entorno si está disponible."""
+    import os
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Si hay variable de entorno, úsala directamente (espera que contenga todo: usuario, pass, host, puerto, db)
+        return psycopg2.connect(database_url)
     else:
         # Fallback a parámetros locales (para desarrollo)
         return psycopg2.connect(
@@ -27,14 +31,6 @@ def get_connection():
             password=DB_PASSWORD,
             client_encoding='UTF8'
         )
-
-def get_engine():
-    """SQLAlchemy engine usando creator (evita DSN)."""
-    return create_engine(
-        'postgresql+psycopg2://',
-        creator=get_connection
-    )
-
 # ============================================
 # MAPEO ELECCIONES (desde config.py)
 # ============================================
