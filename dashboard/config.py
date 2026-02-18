@@ -1,3 +1,9 @@
+import streamlit as st
+import os
+
+# Leer desde Streamlit Secrets o variables de entorno
+DATABASE_URL = st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL"))
+BACKEND_URL = st.secrets.get("BACKEND_URL", "https://taxco-backend-api.onrender.com")
 # -*- coding: utf-8 -*-
 DB_HOST = "localhost"
 DB_PORT = "5432"
