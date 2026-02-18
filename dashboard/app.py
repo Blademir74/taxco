@@ -317,19 +317,16 @@ if isinstance(invite_token, list):
 # Si hay token, intentar validarlo
 if invite_token:
     try:
-        # Llamar al endpoint de la API para validar el token
         import requests
-        api_url = f"{BACKEND_URL}/api/validate-invite"
-        backend_url = f"{BACKEND_URL}/api/exportar-excel"
+        backend_url = st.secrets["BACKEND_URL"]  # Lee la variable desde los secrets
+        api_url = f"{backend_url}/api/validate-invite"
         response = requests.get(f"{api_url}/{invite_token}")
         if response.status_code == 200:
             data = response.json()
-            # Guardar en session_state que el usuario está autorizado
             st.session_state.tenant_id = data["tenant_id"]
             st.session_state.email = data["email"]
             st.session_state.invite_valid = True
-            # Opcional: eliminar el token de la URL para que no se vea
-            st.query_params.clear()
+            st.query_params.clear()  # Limpia el token de la URL
         else:
             st.error("El enlace de invitación no es válido o ha expirado.")
             st.stop()
