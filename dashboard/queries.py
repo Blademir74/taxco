@@ -31,6 +31,13 @@ def get_connection():
             password=DB_PASSWORD,
             client_encoding='UTF8'
         )
+def get_engine():
+    """SQLAlchemy engine usando creator (evita DSN)."""
+    return create_engine(
+        'postgresql+psycopg2://',
+        creator=get_connection
+    )
+
 # ============================================
 # MAPEO ELECCIONES (desde config.py)
 # ============================================
