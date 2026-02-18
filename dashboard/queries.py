@@ -15,15 +15,22 @@ from shapely.geometry import shape
 # CONEXIÓN SEGURA (sin DSN, UTF-8 forzado)
 # ============================================
 def get_connection():
-    """Crea conexión directa con psycopg2, parámetros nominativos."""
-    return psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        client_encoding='UTF8'
-    )
+    """Crea conexión directa con psycopg2, usando DATABASE_URL del entorno si está disponible."""
+    import os
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Si hay variable de entorno, úsala directamente (espera que contenga todo: usuario, pass, host, puerto, db)
+        return psycopg2.connect(database_url)
+    else:
+        # Fallback a parámetros locales (para desarrollo)
+        return psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            client_encoding='UTF8'
+        )
 
 def get_engine():
     """SQLAlchemy engine usando creator (evita DSN)."""
