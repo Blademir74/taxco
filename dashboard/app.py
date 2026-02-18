@@ -11,6 +11,7 @@ from datetime import datetime
 import sys
 from pathlib import Path
 import os
+import urllib.parse
 
 # Configurar path
 DASHBOARD_PATH = Path(__file__).parent
@@ -28,7 +29,7 @@ except ImportError as e:
 # CONFIGURACIÓN DE PÁGINA
 # ============================================
 st.set_page_config(
-    page_title="Dashboard Electoral Taxco 2024",
+    page_title="Dashboard Electoral Taxco 2026",
     page_icon="🗳️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -307,26 +308,61 @@ footer {
 }
 </style>
 """, unsafe_allow_html=True)
+# Obtener el token de la query string (si existe)
+query_params = st.query_params
+invite_token = query_params.get("invite", [None])
+if isinstance(invite_token, list):
+    invite_token = invite_token[0] if invite_token else None
 
+# Si hay token, intentar validarlo
+if invite_token:
+    try:
+        # Llamar al endpoint de la API para validar el token
+        import requests
+        api_url = "http://localhost:8000/api/validate-invite"  # Cambiar por tu URL real
+        response = requests.get(f"{api_url}/{invite_token}")
+        if response.status_code == 200:
+            data = response.json()
+            # Guardar en session_state que el usuario está autorizado
+            st.session_state.tenant_id = data["tenant_id"]
+            st.session_state.email = data["email"]
+            st.session_state.invite_valid = True
+            # Opcional: eliminar el token de la URL para que no se vea
+            st.query_params.clear()
+        else:
+            st.error("El enlace de invitación no es válido o ha expirado.")
+            st.stop()
+    except Exception as e:
+        st.error(f"Error al validar invitación: {e}")
+        st.stop()
+else:
+    # Si no hay token, verificar si ya hay sesión válida en session_state
+    if "invite_valid" not in st.session_state or not st.session_state.invite_valid:
+        st.warning("Acceso restringido. Necesitas un enlace de invitación válido.")
+        # Mostrar un formulario para que el usuario ingrese su email si quieres otra opción
+        st.stop()
 # ============================================
 # HEADER CON ESCUDO DE TAXCO
 # ============================================
-col_logo, col_titulo = st.columns([1, 4])
-
-
+col_logo, col_titulo = st.columns([1.5, 4])  # más espacio para el logo
 with col_logo:
     # Intentar cargar el escudo; si no existe, mostrar un placeholder
     escudo_path = Path(__file__).parent / "escudo_taxco.png"
     if escudo_path.exists():
-        st.image(str(escudo_path), width=80)
+        # Usar un contenedor para centrar
+        st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
+        st.image(str(escudo_path), width=200)  # más grande
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
-        # Placeholder: círculo con iniciales (no rompe la app)
+        # Placeholder centrado y más grande
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #B8242B, #8B1A1A); 
-                    width: 80px; height: 80px; border-radius: 50%; 
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 32px; color: white; font-weight: bold;">
-            T
+        <div style="display: flex; justify-content: center;">
+            <div style="background: linear-gradient(135deg, #B8242B, #8B1A1A); 
+                        width: 150px; height: 150px; border-radius: 50%; 
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 48px; color: white; font-weight: bold;">
+                T
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -381,6 +417,36 @@ with st.sidebar:
     st.subheader("📊 Indicador de Desigualdad")
     st.metric("Coeficiente de Gini", "0.417", help="Nivel de desigualdad económica")
     st.caption("**Interpretación:** Desigualdad moderada-alta.")
+
+    # ===== NUEVO ENLACE A LA PWA DE CAMPO =====
+    st.divider()
+    st.markdown("### 📱 Herramienta de Campo")
+    st.markdown("[Abrir Diagnóstico Territorial](https://tusitio.com/campo) — _Nueva ventana_")
+    
+        # ========================================
+    # MENSAJE POR SECCIÓN (INTELIGENCIA NARRATIVA)
+    # ========================================
+    st.divider()
+    st.subheader("🎯 Mensaje por Sección")
+    
+    try:
+        secciones_lista = get_lista_secciones()
+        seccion_seleccionada = st.selectbox(
+            "Selecciona una sección",
+            secciones_lista,
+            key='selector_seccion_mensaje'
+        )
+        
+        if seccion_seleccionada:
+            with st.spinner("Generando análisis..."):
+                datos = get_datos_seccion(seccion_seleccionada)
+                if not datos.empty:
+                    script = generar_script_territorio(datos.iloc[0])
+                    st.markdown(script)
+                else:
+                    st.warning("No hay datos disponibles para esta sección.")
+    except Exception as e:
+        st.error(f"Error al cargar datos: {e}")
     
     # ========================================
     # PANEL DE ACCIONES PRIORITARIAS 24H
@@ -628,7 +694,7 @@ with tab1:
                 paper_bgcolor='rgba(0,0,0,0)',
                 geo=dict(bgcolor='rgba(0,0,0,0)')
             )
-            st.plotly_chart(fig_mapa, use_container_width=True)
+            st.plotly_chart(fig_mapa, use_container_width=True, config={'scrollZoom': True})
             
             # Estadísticas
             col1, col2, col3 = st.columns(3)
@@ -681,7 +747,7 @@ with tab1:
                 font_color='white',
                 paper_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_rezago, use_container_width=True)
+            st.plotly_chart(fig_rezago, use_container_width=True, config={'scrollZoom': True})
             st.markdown("""
             <div class="success-box">
                 <strong>💡 INSIGHT:</strong> Zonas rojas = mayor rezago. Priorizar en FAISMUN 2025.
@@ -731,7 +797,16 @@ with tab1:
                 font_color='white',
                 paper_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_genero, use_container_width=True)
+                    # ===== LEYENDA DEL SEMÁFORO DE HUMOR SOCIAL =====
+            st.markdown("""
+            <div style="display: flex; gap: 20px; margin-bottom: 10px; background: rgba(18,22,25,0.5); padding: 10px; border-radius: 8px;">
+                <div><span style="color: #d73027;">🔴</span> Deficiente (ISC < 40)</div>
+                <div><span style="color: #fc8d59;">🟠</span> Regular (40-59)</div>
+                <div><span style="color: #fee08b;">🟡</span> Bueno (60-74)</div>
+                <div><span style="color: #91cf60;">🟢</span> Excelente (≥75)</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.plotly_chart(fig_genero, use_container_width=True, config={'scrollZoom': True})
     
     elif vista_mapa == "Sentimiento Social (ISC)":
         gdf_sentimiento = get_mapa_sentimiento()
@@ -769,7 +844,7 @@ with tab1:
                 font_color='white',
                 paper_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_sentimiento, use_container_width=True)
+            st.plotly_chart(fig_sentimiento, use_container_width=True, config={'scrollZoom': True})
             
             # Estadísticas
             col1, col2, col3, col4 = st.columns(4)
@@ -1099,7 +1174,30 @@ with tab5:
     with col3:
         if st.button("📄 Crear PDF", use_container_width=True):
             st.warning("Función próximamente")
-
+# ===== NUEVO: Exportación de datos de campo =====
+    st.divider()
+    st.subheader("📱 Datos de la Herramienta de Campo")
+    
+    if st.button("📥 Descargar Excel con todos los diagnósticos", use_container_width=True):
+        try:
+            import requests
+            with st.spinner("Generando archivo Excel..."):
+                # Cambia la URL si el backend está en otro lado
+                backend_url = "http://localhost:8000/api/exportar-excel"
+                response = requests.get(backend_url, stream=True)
+                if response.status_code == 200:
+                    # Crear enlace de descarga
+                    st.download_button(
+                        label="✅ Haz clic para guardar el Excel",
+                        data=response.content,
+                        file_name="diagnosticos_campo.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="download_excel"
+                    )
+                else:
+                    st.error(f"Error al generar Excel: {response.status_code} - {response.text}")
+        except Exception as e:
+            st.error(f"Error de conexión con el backend: {e}")
 # ============================================
 # FOOTER (sin línea divisoria)
 # ============================================

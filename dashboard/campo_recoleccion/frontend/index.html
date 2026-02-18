@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Diagnóstico Estratégico de Territorio - Taxco</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <meta name="theme-color" content="#C0C0C0">
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Diagnóstico Estratégico de Territorio</h1>
+        
+        <form id="diagnosticoForm">
+            <!-- Sección Electoral -->
+            <div class="form-group">
+                <label for="seccion">🗳️ Sección Electoral *</label>
+                <select id="seccion" required>
+                    <option value="">Cargando secciones...</option>
+                </select>
+                <div id="insight-seccion"></div>
+            </div>
+
+            <!-- Género obligatorio -->
+            <div class="form-group">
+                <label>👤 Género de la persona *</label>
+                <div style="display: flex; gap: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="radio" name="genero" value="femenino" required> Mujer
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="radio" name="genero" value="masculino" required> Hombre
+                    </label>
+                </div>
+            </div>
+
+            <!-- Sentimiento Social -->
+            <h2>😊 Satisfacción en Servicios</h2>
+            
+            <div class="form-group">
+                <label>Agua potable</label>
+                <div class="rating">
+                    <input type="radio" name="agua" id="agua5" value="5"><label for="agua5">★</label>
+                    <input type="radio" name="agua" id="agua4" value="4"><label for="agua4">★</label>
+                    <input type="radio" name="agua" id="agua3" value="3" checked><label for="agua3">★</label>
+                    <input type="radio" name="agua" id="agua2" value="2"><label for="agua2">★</label>
+                    <input type="radio" name="agua" id="agua1" value="1"><label for="agua1">★</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Recolección de basura</label>
+                <div class="rating">
+                    <input type="radio" name="basura" id="basura5" value="5"><label for="basura5">★</label>
+                    <input type="radio" name="basura" id="basura4" value="4"><label for="basura4">★</label>
+                    <input type="radio" name="basura" id="basura3" value="3" checked><label for="basura3">★</label>
+                    <input type="radio" name="basura" id="basura2" value="2"><label for="basura2">★</label>
+                    <input type="radio" name="basura" id="basura1" value="1"><label for="basura1">★</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Seguridad pública</label>
+                <div class="rating">
+                    <input type="radio" name="seguridad" id="seguridad5" value="5"><label for="seguridad5">★</label>
+                    <input type="radio" name="seguridad" id="seguridad4" value="4"><label for="seguridad4">★</label>
+                    <input type="radio" name="seguridad" id="seguridad3" value="3" checked><label for="seguridad3">★</label>
+                    <input type="radio" name="seguridad" id="seguridad2" value="2"><label for="seguridad2">★</label>
+                    <input type="radio" name="seguridad" id="seguridad1" value="1"><label for="seguridad1">★</label>
+                </div>
+            </div>
+
+            <!-- Carencias -->
+            <h2>🚱 Carencias detectadas</h2>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="falta_agua"> Falta de agua entubada</label>
+                <label><input type="checkbox" id="falta_drenaje"> Falta de drenaje</label>
+                <label><input type="checkbox" id="rezago_educativo"> Rezago educativo</label>
+            </div>
+
+            <!-- Evidencia fotográfica -->
+            <h2>📸 Evidencia (opcional)</h2>
+            <button type="button" id="btn-camera" class="btn-camera">📷 Tomar foto</button>
+            <input type="hidden" id="foto-base64">
+            <div class="form-group">
+                <label for="comentario-foto">Comentario de la foto</label>
+                <input type="text" id="comentario-foto" placeholder="Ej. Fuga de agua en calle principal">
+            </div>
+
+            <!-- GPS (oculto) -->
+            <input type="hidden" id="latitud">
+            <input type="hidden" id="longitud">
+
+            <!-- CRM Político -->
+            <h2>📇 Captura de simpatizante (obligatorio)</h2>
+            <div class="form-group">
+                <label for="nombre">Nombre completo *</label>
+                <input type="text" id="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="contacto">Teléfono / Email *</label>
+                <input type="text" id="contacto" required>
+            </div>
+            <div class="form-group">
+                <label for="notas">Notas adicionales</label>
+                <textarea id="notas" rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">📤 Enviar diagnóstico</button>
+        </form>
+
+        <button class="btn-sync" onclick="sincronizar()">🔄 Sincronizar datos pendientes (<span id="pendientes-count">0</span>)</button>
+
+        <div class="footer">
+            <p>Diagnóstico Estratégico de Territorio - Taxco de Alarcón</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('SW registrado'))
+                .catch(err => console.error('Error SW:', err));
+        }
+    </script>
+</body>
+</html>

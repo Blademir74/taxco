@@ -396,6 +396,11 @@ def get_satisfaccion_por_servicio_agregado():
 # ============================================
 
 def get_alertas_conflicto(umbral_rezago=40, umbral_isc=40):
+    """
+    Retorna DataFrame con secciones que tienen:
+    - Rezago social > umbral_rezago
+    - ISC < umbral_isc
+    """
     engine = get_engine()
     query = """
     SELECT 
@@ -404,8 +409,8 @@ def get_alertas_conflicto(umbral_rezago=40, umbral_isc=40):
         COALESCE(vss.indice_satisfaccion_ciudadana, 50) as isc,
         s.pk_seccion
     FROM seccion s
-    LEFT JOIN vw_rezago_secciones r ON r.pk_seccion = s.pk_seccion   -- ← s.pk_seccion explícito
-    LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.pk_seccion = s.pk_seccion  -- ← explícito
+    LEFT JOIN vw_rezago_secciones r ON r.pk_seccion = s.pk_seccion
+    LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.pk_seccion = s.pk_seccion
     WHERE s.id_municipio = %(municipio_id)s
       AND r.pct_sin_servicios_basicos > %(umbral_rezago)s
       AND COALESCE(vss.indice_satisfaccion_ciudadana, 50) < %(umbral_isc)s
@@ -417,7 +422,7 @@ def get_alertas_conflicto(umbral_rezago=40, umbral_isc=40):
 def get_acciones_prioritarias_24h(top_n=3):
     """
     Retorna las N secciones con mayor urgencia basada en:
-    - Pertenecer al Top 20 por peso electoral (lista nominal)
+    - Top 20 por peso electoral
     - Mayor rezago social
     - Menor ISC
     """
@@ -425,7 +430,7 @@ def get_acciones_prioritarias_24h(top_n=3):
     query = """
     WITH top20 AS (
         SELECT 
-            pi.pk_seccion,           -- ← CALIFICADO: explicitamos la tabla
+            pi.pk_seccion,
             s.seccion,
             pi.lista_nominal_oficial,
             ROW_NUMBER() OVER (ORDER BY pi.lista_nominal_oficial DESC) as rank_peso
@@ -454,7 +459,115 @@ def get_acciones_prioritarias_24h(top_n=3):
     """
     params = {'municipio_id': MUNICIPIO_ID, 'top_n': top_n}
     return pd.read_sql(query, engine, params=params)
+
+# ============================================
+# 14. LISTA DE SECCIONES PARA SELECTOR
+# ============================================
+def get_lista_secciones():
+    engine = get_engine()
+    query = "SELECT seccion FROM seccion WHERE id_municipio = %s ORDER BY seccion"
+    df = pd.read_sql(query, engine, params=(MUNICIPIO_ID,))
+    return df['seccion'].tolist()
+
+# ============================================
+# 15. TOTAL DE SECCIONES
+# ============================================
 def get_total_secciones():
     engine = get_engine()
     query = "SELECT COUNT(*) FROM seccion WHERE id_municipio = %s"
     return pd.read_sql(query, engine, params=(MUNICIPIO_ID,)).iloc[0,0]
+
+# ============================================
+# 16. VERIFICAR SI UNA SECCIÓN ESTÁ EN TOP 20
+# ============================================
+def es_top20(seccion):
+    """Devuelve True si la sección está en el top 20 por peso electoral."""
+    top20 = get_secciones_estrategicas_20()
+    return seccion in top20['seccion'].values
+
+# ============================================
+# 17. DATOS CONSOLIDADOS DE UNA SECCIÓN
+# ============================================
+def get_datos_seccion(seccion):
+    """Obtiene datos consolidados de una sección."""
+    engine = get_engine()
+    query = """
+    SELECT 
+        s.seccion,
+        pi.lista_nominal_oficial,
+        pi.lista_mujeres,
+        pi.lista_hombres,
+        COALESCE(r.pct_sin_agua, 0) as pct_sin_agua,
+        COALESCE(r.pct_sin_drenaje, 0) as pct_sin_drenaje,
+        COALESCE(r.pct_sin_electricidad, 0) as pct_sin_electricidad,
+        COALESCE(r.pct_sin_servicios_basicos, 0) as rezago,
+        COALESCE(vss.indice_satisfaccion_ciudadana, 50) as isc,
+        COALESCE(vss.total_opiniones, 0) as num_opiniones,
+        (SELECT ganador_2024 FROM vw_riesgo_electoral WHERE seccion = s.seccion LIMIT 1) as ganador_2024,
+        (SELECT pct_votos FROM vw_riesgo_electoral WHERE seccion = s.seccion LIMIT 1) as pct_votos
+    FROM seccion s
+    LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = 2024
+    LEFT JOIN vw_rezago_secciones r ON r.seccion = s.seccion
+    LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.seccion = s.seccion
+    WHERE s.seccion = %s AND s.id_municipio = %s
+    """
+    return pd.read_sql(query, engine, params=(seccion, MUNICIPIO_ID))
+
+# ============================================
+# 18. GENERADOR DE SCRIPT DE TERRITORIO
+# ============================================
+def generar_script_territorio(row):
+    """Genera un mensaje estratégico basado en los datos de la sección."""
+    mensaje = f"**Sección {row['seccion']}**\n\n"
+    
+    poblacion = row['lista_nominal_oficial']
+    if poblacion and poblacion > 0:
+        pct_mujeres = (row['lista_mujeres'] / poblacion * 100)
+        pct_hombres = 100 - pct_mujeres
+    else:
+        pct_mujeres = 0
+        pct_hombres = 0
+    
+    es_femenino = pct_mujeres > 50
+    es_top = es_top20(row['seccion'])
+    
+    prioridades = []
+    if row['pct_sin_agua'] > 10:
+        prioridades.append("agua potable")
+    if row['pct_sin_drenaje'] > 10:
+        prioridades.append("drenaje")
+    if row['pct_sin_electricidad'] > 5:
+        prioridades.append("electricidad")
+    
+    mensaje += f"👥 **Población:** {poblacion:,} electores ({pct_mujeres:.1f}% mujeres, {pct_hombres:.1f}% hombres).\n"
+    mensaje += f"📉 **Rezago:** {row['rezago']:.1f}% de carencias básicas.\n"
+    mensaje += f"😊 **Satisfacción ciudadana:** {row['isc']:.1f} puntos (ISC).\n"
+    
+    if row['ganador_2024']:
+        mensaje += f"🏛️ **Ganador 2024:** {row['ganador_2024']} con {row['pct_votos']:.1f}% de votos.\n"
+    
+    mensaje += "\n**💧 Prioridades de inversión FAISMUN:**\n"
+    if prioridades:
+        for p in prioridades:
+            mensaje += f"- Mejorar infraestructura de **{p}**.\n"
+        if es_top and row['pct_sin_agua'] > 10:
+            mensaje += f"\n🚨 **PROPUESTA PRIORITARIA:** En esta sección estratégica (Top 20), destinaremos recursos del FAISMUN 2025 para resolver el problema de agua potable. ¡Es una de nuestras prioridades!\n"
+    else:
+        mensaje += "- No se detectan carencias críticas en servicios básicos.\n"
+    
+    if es_femenino:
+        mensaje += "\n👩 **Enfoque de género:** Esta sección tiene mayoría femenina. Priorizaremos mensajes sobre salud, seguridad social y programas de apoyo a madres trabajadoras.\n"
+        if es_top:
+            mensaje += "🩺 **Acción específica:** Implementaremos jornadas de salud y fortalecimiento de programas sociales en esta zona.\n"
+    else:
+        mensaje += "\n👨 **Enfoque de género:** Sección con mayoría masculina. Enfatizaremos empleo, infraestructura y seguridad.\n"
+    
+    if prioridades:
+        tema = prioridades[0]
+        mensaje += f"\n🎯 **Mensaje clave:** 'Vamos a llevar **{tema}** a tu colonia con el FAISMUN 2025. ¡Ya es hora de resolverlo!'"
+    elif row['isc'] < 40:
+        mensaje += "\n🎯 **Mensaje clave:** 'Escuchamos tu descontento. Iniciamos mesas de trabajo para mejorar los servicios en tu sector.'"
+    else:
+        mensaje += "\n🎯 **Mensaje clave:** 'Seguimos trabajando por tu bienestar. Gracias por tu confianza.'"
+    
+    return mensaje
