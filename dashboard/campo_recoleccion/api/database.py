@@ -1,12 +1,13 @@
-import os
-from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.pool import QueuePool
 from dotenv import load_dotenv
+import os
+from sqlalchemy import create_engine
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("No DATABASE_URL environment variable set")
+engine = create_engine(DATABASE_URL)
 
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://...")
-engine = create_engine(DATABASE_URL, connect_args={'client_encoding': 'utf8'})
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "taxco_electoral")
