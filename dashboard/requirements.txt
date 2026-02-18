@@ -1,10 +1,8 @@
-setuptools==75.8.2
-wheel==0.45.1
 streamlit==1.30.0
-pandas==2.0.3
-plotly==5.18.0
-geopandas==0.14.1
-psycopg2-binary==2.9.9
-sqlalchemy==2.0.23
-requests==2.31.0
-openpyxl==3.1.2
+pandas
+plotly
+geopandas
+psycopg2-binary
+sqlalchemy
+requests
+openpyxl
