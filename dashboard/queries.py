@@ -34,7 +34,7 @@ def get_connection():
 def get_engine():
     """SQLAlchemy engine usando creator (evita DSN)."""
     return create_engine(
-        'postgresql+psycopg2://',
+        'postgresql+psycopg3://',
         creator=get_connection
     )
 
