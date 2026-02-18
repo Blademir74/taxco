@@ -323,15 +323,12 @@ async def crear_invitacion(inv: InvitacionRequest, admin_key: str = Header(...))
     return InvitacionResponse(token=token, link=link)
 @app.get("/api/validate-invite/{token}")
 async def validate_invite(token: str):
-    conn = engine.raw_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT email, tenant_id, fecha_expiracion, usada
-            FROM invitaciones
-            WHERE token = %s
-        """, (token,))
-        row = cursor.fetchone()
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT email, tenant_id, fecha_expiracion, usada FROM invitaciones WHERE token = :token"),
+            {"token": token}
+        ).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Token no encontrado")
         email, tenant_id, expiracion, usada = row
@@ -339,21 +336,13 @@ async def validate_invite(token: str):
             raise HTTPException(status_code=400, detail="Invitación ya utilizada")
         if datetime.utcnow() > expiracion:
             raise HTTPException(status_code=400, detail="Invitación expirada")
-
-        # Marcar como usada y crear registro en usuarios_tenant
-        cursor.execute("UPDATE invitaciones SET usada = TRUE WHERE token = %s", (token,))
-        cursor.execute("""
+        conn.execute(text("UPDATE invitaciones SET usada = TRUE WHERE token = :token"), {"token": token})
+        conn.execute(text("""
             INSERT INTO usuarios_tenant (email, tenant_id, fecha_expiracion)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (email) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, fecha_expiracion = EXCLUDED.fecha_expiracion
-        """, (email, tenant_id, expiracion))
+            VALUES (:email, :tenant_id, :exp)
+            ON CONFLICT (email) DO UPDATE 
+            SET tenant_id = EXCLUDED.tenant_id, fecha_expiracion = EXCLUDED.fecha_expiracion
+        """), {"email": email, "tenant_id": tenant_id, "exp": expiracion})
         conn.commit()
         return {"email": email, "tenant_id": tenant_id}
-    except HTTPException:
-        raise
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cursor.close()
         conn.close()
