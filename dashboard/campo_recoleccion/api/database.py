@@ -4,8 +4,6 @@ from dotenv import load_dotenv
 import os
 from sqlalchemy import create_engine
 DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("No DATABASE_URL environment variable set")
 engine = create_engine(DATABASE_URL)
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
