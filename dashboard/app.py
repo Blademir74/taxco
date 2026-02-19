@@ -319,6 +319,7 @@ if invite_token:
     invite_token = invite_token.strip() 
     try:
         import requests
+<<<<<<< HEAD
         import time
         
         backend_url = st.secrets["BACKEND_URL"]  # Lee la variable desde los secrets
@@ -354,6 +355,20 @@ if invite_token:
                     st.error("Error de conexión con el servidor de validación.")
                     st.stop()
                     
+=======
+        backend_url = st.secrets["BACKEND_URL"]  # Lee la variable desde los secrets
+        api_url = f"{backend_url}/api/validate-invite"
+        response = requests.get(f"{api_url}/{invite_token}")
+        if response.status_code == 200:
+            data = response.json()
+            st.session_state.tenant_id = data["tenant_id"]
+            st.session_state.email = data["email"]
+            st.session_state.invite_valid = True
+            st.query_params.clear()  # Limpia el token de la URL
+        else:
+            st.error("El enlace de invitación no es válido o ha expirado.")
+            st.stop()
+>>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
     except Exception as e:
         st.error(f"Error al validar invitación: {e}")
         st.stop()

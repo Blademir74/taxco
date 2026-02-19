@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="API de Recolección Territorial - Taxco")
 
+<<<<<<< HEAD
 
 # CORS: Configuración explícita para Streamlit Cloud y Localhost
 origins = [
@@ -34,11 +35,18 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # Para simplificar debugging inicial. En producción, usar lista 'origins'
     allow_credentials=True,
+=======
+# CORS (permite todos los orígenes, ajusta en producción)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+>>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ============================================
+<<<<<<< HEAD
 # Health Check & Root (Keep-Alive)
 # ============================================
 @app.get("/")
@@ -52,6 +60,8 @@ def health_check():
 
 
 # ============================================
+=======
+>>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
 # Endpoints públicos
 # ============================================
 
@@ -323,7 +333,13 @@ async def validate_invite(token: str):
     finally:
         cursor.close()
         conn.close()
+<<<<<<< HEAD
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+=======
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+>>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d

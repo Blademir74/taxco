@@ -1,9 +1,12 @@
-# -*- coding: utf-8 -*-
-DB_HOST = "localhost"
+import streamlit as st
+import os
+
+DATABASE_URL = st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL"))
+DB_HOST = "ep-dark-salad-aiwt2y0r-pooler.c-4.us-east-1.aws.neon.tech"
 DB_PORT = "5432"
-DB_NAME = "taxco_electoral"
-DB_USER = "postgres"
-DB_PASSWORD = "postgres123"
+DB_NAME = "neondb"
+DB_USER = "neondb_owner"
+DB_PASSWORD = "npg_ZxOqBGdQ40hf"
 
 MUNICIPIO_ID = 56
 MUNICIPIO_NOMBRE = "Taxco de Alarcon"
