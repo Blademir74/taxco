@@ -130,7 +130,7 @@ def get_mapa_ganadores(anio):
            COALESCE(g.votos_ganador, 0) as votos_ganador,
            pi.lista_nominal_oficial,
            ROUND(COALESCE(g.votos_ganador, 0)::numeric * 100.0 / NULLIF(pi.lista_nominal_oficial, 0), 2) as participacion_pct,
-           ST_AsGeoJSON(s.geom::geometry) as geometry
+           s.geom as geometry
     FROM seccion s
     LEFT JOIN ganador_por_seccion g ON g.pk_seccion = s.pk_seccion
     LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = %(anio)s
@@ -160,7 +160,7 @@ def get_mapa_rezago():
                COALESCE(ci.vph_sin_agua::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0) +
                COALESCE(ci.vph_sin_drenaje::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0)
               ) / 3.0, 2) as pct_sin_servicios_basicos,
-        ST_AsGeoJSON(s.geom::geometry) as geometry
+        s.geom as geometry
     FROM seccion s
     JOIN carencias_inegi ci ON ci.pk_seccion = s.pk_seccion
     WHERE s.id_municipio = %(municipio_id)s AND s.geom IS NOT NULL
@@ -193,7 +193,7 @@ def get_mapa_sentimiento():
             WHEN COALESCE(vss.indice_satisfaccion_ciudadana, 50) >= 40 THEN 'Regular'
             ELSE 'Deficiente'
         END as nivel_satisfaccion,
-        ST_AsGeoJSON(s.geom::geometry) as geometry
+        s.geom as geometry
     FROM seccion s
     LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.pk_seccion = s.pk_seccion
     WHERE s.id_municipio = %(municipio_id)s AND s.geom IS NOT NULL
