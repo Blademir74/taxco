@@ -492,7 +492,7 @@ with st.sidebar:
     # ===== NUEVO ENLACE A LA PWA DE CAMPO =====
     st.divider()
     st.markdown("### 📱 Herramienta de Campo")
-    st.markdown("[Abrir Diagnóstico Territorial](https://tusitio.com/campo) — _Nueva ventana_")
+    st.markdown("[📋 Abrir Diagnóstico Territorial](https://taxco-campo.vercel.app)", unsafe_allow_html=False)
     
         # ========================================
     # MENSAJE POR SECCIÓN (INTELIGENCIA NARRATIVA)
