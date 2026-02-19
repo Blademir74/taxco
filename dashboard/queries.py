@@ -164,22 +164,22 @@ def get_mapa_rezago():
     query = """
     SELECT s.seccion, ci.pobtot, ci.pct_sin_derechohab, ci.grado_prom_escolar,
         ci.num_viviendas_particulares,
-        COALESCE(ci.vph_sin_agua, 0) as vph_sin_agua,
-        COALESCE(ci.vph_sin_drenaje, 0) as vph_sin_drenaje,
-        COALESCE(ci.vph_sin_electricidad, 0) as vph_sin_electricidad,
-        ROUND(COALESCE(ci.vph_sin_agua::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 2) as pct_sin_agua,
-        ROUND(COALESCE(ci.vph_sin_drenaje::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 2) as pct_sin_drenaje,
-        ROUND(COALESCE(ci.vph_sin_electricidad::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 2) as pct_sin_electricidad,
-        ROUND((COALESCE(ci.pct_sin_derechohab, 0) +
-               COALESCE(ci.vph_sin_agua::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0) +
-               COALESCE(ci.vph_sin_drenaje::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0)
+        COALESCE(ci.vph_sin_agua::numeric, 0) as vph_sin_agua,
+        COALESCE(ci.vph_sin_drenaje::numeric, 0) as vph_sin_drenaje,
+        COALESCE(ci.vph_sin_electricidad::numeric, 0) as vph_sin_electricidad,
+        ROUND(COALESCE(ci.vph_sin_agua::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares::numeric, 1), 2) as pct_sin_agua,
+        ROUND(COALESCE(ci.vph_sin_drenaje::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares::numeric, 1), 2) as pct_sin_drenaje,
+        ROUND(COALESCE(ci.vph_sin_electricidad::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares::numeric, 1), 2) as pct_sin_electricidad,
+        ROUND((COALESCE(ci.pct_sin_derechohab::numeric, 0) +
+               COALESCE(ci.vph_sin_agua::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares::numeric, 1) +
+               COALESCE(ci.vph_sin_drenaje::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares::numeric, 1)
               ) / 3.0, 2) as pct_sin_servicios_basicos,
         s.geom as geometry
     FROM seccion s
     JOIN carencias_inegi ci ON ci.pk_seccion = s.pk_seccion
     WHERE s.id_municipio = %(municipio_id)s AND s.geom IS NOT NULL
       AND ci.anio_inegi = (SELECT MAX(anio_inegi) FROM carencias_inegi)
-      AND ci.num_viviendas_particulares > 0
+      AND ci.num_viviendas_particulares::numeric > 0
     """
     try:
         df = sql(query, {'municipio_id': MUNICIPIO_ID})
@@ -318,9 +318,9 @@ def get_correlacion_participacion_carencias(anio):
 def get_seccion_rezago_top10():
     query = """
     SELECT s.seccion, ci.pobtot,
-        ROUND((COALESCE(ci.pct_sin_derechohab, 0) +
-               COALESCE(ci.vph_sin_agua::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0) +
-               COALESCE(ci.vph_sin_drenaje::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0)
+        ROUND((COALESCE(ci.pct_sin_derechohab::numeric, 0) +
+               COALESCE(ci.vph_sin_agua::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares::numeric, 1) +
+               COALESCE(ci.vph_sin_drenaje::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares::numeric, 1)
               ) / 3.0, 2) as pct_sin_servicios
     FROM seccion s
     JOIN carencias_inegi ci ON ci.pk_seccion = s.pk_seccion
