@@ -1,42 +1,40 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import geopandas as gpd
-from sqlalchemy import create_engine, text
 import os
-from config import *
 import json
+import psycopg2
+import psycopg2.extras
 from shapely.geometry import shape
+from config import *
 
 # ============================================
-# CONEXIÓN SEGURA — psycopg2 + exec_driver_sql
+# CONEXIÓN DIRECTA CON PSYCOPG2
 # ============================================
-_engine = None
-
-def get_engine():
-    global _engine
-    if _engine is not None:
-        return _engine
+def get_conn():
+    """Conexión directa a Neon via psycopg2."""
     database_url = os.getenv("DATABASE_URL", "")
-    if not database_url:
-        database_url = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require"
-    if database_url.startswith("postgresql+psycopg://") and "psycopg2" not in database_url:
-        database_url = database_url.replace("postgresql+psycopg://", "postgresql+psycopg2://")
-    if database_url.startswith("postgresql://"):
-        database_url = "postgresql+psycopg2://" + database_url[len("postgresql://"):]
-    _engine = create_engine(database_url, pool_pre_ping=True, connect_args={"sslmode": "require"})
-    return _engine
+    if database_url:
+        # Limpiar prefijos de SQLAlchemy si existen
+        database_url = database_url.replace("postgresql+psycopg2://", "postgresql://")
+        database_url = database_url.replace("postgresql+psycopg://", "postgresql://")
+        return psycopg2.connect(database_url)
+    return psycopg2.connect(
+        host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
+        user=DB_USER, password=DB_PASSWORD, sslmode="require"
+    )
 
 def sql(query, params=None):
-    """Ejecuta query retornando DataFrame. Params usan :nombre."""
-    import re as _re
-    engine = get_engine()
-    if params:
-        query = _re.sub(r":([a-zA-Z_][a-zA-Z0-9_]*)", lambda m: "%(" + m.group(1) + ")s", query)
-    with engine.connect() as conn:
-        result = conn.exec_driver_sql(query, params or {})
-        rows = result.fetchall()
-        cols = list(result.keys())
-        return pd.DataFrame(rows, columns=cols) if rows else pd.DataFrame(columns=cols)
+    """Ejecuta query y retorna DataFrame. Params usan %(nombre)s."""
+    try:
+        conn = get_conn()
+        df = pd.read_sql_query(query, conn, params=params)
+        conn.close()
+        return df
+    except Exception as e:
+        import streamlit as st
+        st.error(f"Error DB: {e}")
+        return pd.DataFrame()
 
 def get_id_eleccion(anio):
     return MAPEO_ELECCIONES.get(anio, 3)
@@ -60,9 +58,9 @@ def get_kpis_participacion():
         SELECT SUM(lista_nominal_oficial) as lista_nominal_oficial
         FROM padron_ine
         WHERE anio_padron = e.anio 
-          AND pk_seccion IN (SELECT pk_seccion FROM seccion WHERE id_municipio = :municipio_id)
+          AND pk_seccion IN (SELECT pk_seccion FROM seccion WHERE id_municipio = %(municipio_id)s)
     ) pi ON true
-    WHERE s.id_municipio = :municipio_id
+    WHERE s.id_municipio = %(municipio_id)s
     GROUP BY e.anio, pi.lista_nominal_oficial
     ORDER BY e.anio
     """
@@ -81,9 +79,8 @@ def get_fuerza_electoral(anio):
     JOIN resultados_electorales re ON re.pk_resultado = rp.pk_resultado
     JOIN casilla c ON c.pk_casilla = re.pk_casilla
     JOIN seccion s ON s.pk_seccion = c.pk_seccion
-    WHERE s.id_municipio = :municipio_id AND c.id_eleccion = :id_eleccion
-    GROUP BY p.clave_partido
-    ORDER BY votos DESC
+    WHERE s.id_municipio = %(municipio_id)s AND c.id_eleccion = %(id_eleccion)s
+    GROUP BY p.clave_partido ORDER BY votos DESC
     """
     return sql(query, {'municipio_id': MUNICIPIO_ID, 'id_eleccion': id_eleccion})
 
@@ -92,9 +89,8 @@ def get_fuerza_electoral(anio):
 # ============================================
 def get_outliers_integridad():
     query = """
-    SELECT 
-        e.anio, s.seccion, c.clave_casilla as num_casilla,
-        SUM(rp.votos) as votos_emitidos, 
+    SELECT e.anio, s.seccion, c.clave_casilla as num_casilla,
+        SUM(rp.votos) as votos_emitidos,
         re.lista_nominal_acta as lista_nominal_casilla,
         ROUND(SUM(rp.votos)::numeric * 100.0 / NULLIF(re.lista_nominal_acta, 0), 2) as participacion_pct
     FROM casilla c
@@ -102,7 +98,7 @@ def get_outliers_integridad():
     JOIN eleccion e ON e.id_eleccion = c.id_eleccion
     JOIN resultados_electorales re ON re.pk_casilla = c.pk_casilla
     JOIN resultados_partido rp ON rp.pk_resultado = re.pk_resultado
-    WHERE s.id_municipio = :municipio_id AND re.lista_nominal_acta > 0
+    WHERE s.id_municipio = %(municipio_id)s AND re.lista_nominal_acta > 0
     GROUP BY e.anio, s.seccion, c.clave_casilla, re.lista_nominal_acta
     HAVING SUM(rp.votos) > re.lista_nominal_acta * 0.95
     ORDER BY participacion_pct DESC
@@ -118,11 +114,11 @@ def get_mapa_ganadores(anio):
     WITH votos_por_seccion AS (
         SELECT s.pk_seccion, s.seccion, p.clave_partido as partido, SUM(rp.votos) as votos
         FROM seccion s
-        LEFT JOIN casilla c ON c.pk_seccion = s.pk_seccion AND c.id_eleccion = :id_eleccion
+        LEFT JOIN casilla c ON c.pk_seccion = s.pk_seccion AND c.id_eleccion = %(id_eleccion)s
         LEFT JOIN resultados_electorales re ON re.pk_casilla = c.pk_casilla
         LEFT JOIN resultados_partido rp ON rp.pk_resultado = re.pk_resultado
         LEFT JOIN partido p ON p.id_partido = rp.id_partido
-        WHERE s.id_municipio = :municipio_id
+        WHERE s.id_municipio = %(municipio_id)s
         GROUP BY s.pk_seccion, s.seccion, p.clave_partido
     ),
     ganador_por_seccion AS (
@@ -130,15 +126,15 @@ def get_mapa_ganadores(anio):
         FROM votos_por_seccion WHERE partido IS NOT NULL
         ORDER BY pk_seccion, votos DESC
     )
-    SELECT s.seccion, COALESCE(g.ganador, 'SIN DATOS') as ganador, 
+    SELECT s.seccion, COALESCE(g.ganador, 'SIN DATOS') as ganador,
            COALESCE(g.votos_ganador, 0) as votos_ganador,
            pi.lista_nominal_oficial,
            ROUND(COALESCE(g.votos_ganador, 0)::numeric * 100.0 / NULLIF(pi.lista_nominal_oficial, 0), 2) as participacion_pct,
            ST_AsGeoJSON(s.geom) as geometry
     FROM seccion s
     LEFT JOIN ganador_por_seccion g ON g.pk_seccion = s.pk_seccion
-    LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = :anio
-    WHERE s.id_municipio = :municipio_id AND s.geom IS NOT NULL
+    LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = %(anio)s
+    WHERE s.id_municipio = %(municipio_id)s AND s.geom IS NOT NULL
     """
     df = sql(query, {'id_eleccion': id_eleccion, 'municipio_id': MUNICIPIO_ID, 'anio': anio})
     if not df.empty and 'geometry' in df.columns:
@@ -160,28 +156,26 @@ def get_mapa_rezago():
         ROUND(COALESCE(ci.vph_sin_agua::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 2) as pct_sin_agua,
         ROUND(COALESCE(ci.vph_sin_drenaje::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 2) as pct_sin_drenaje,
         ROUND(COALESCE(ci.vph_sin_electricidad::numeric, 0) * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 2) as pct_sin_electricidad,
-        ROUND((COALESCE(ci.pct_sin_derechohab, 0) + 
+        ROUND((COALESCE(ci.pct_sin_derechohab, 0) +
                COALESCE(ci.vph_sin_agua::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0) +
                COALESCE(ci.vph_sin_drenaje::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0)
               ) / 3.0, 2) as pct_sin_servicios_basicos,
         ST_AsGeoJSON(s.geom) as geometry
     FROM seccion s
     JOIN carencias_inegi ci ON ci.pk_seccion = s.pk_seccion
-    WHERE s.id_municipio = :municipio_id AND s.geom IS NOT NULL
+    WHERE s.id_municipio = %(municipio_id)s AND s.geom IS NOT NULL
       AND ci.anio_inegi = (SELECT MAX(anio_inegi) FROM carencias_inegi)
       AND ci.num_viviendas_particulares > 0
     """
     try:
         df = sql(query, {'municipio_id': MUNICIPIO_ID})
+        if df.empty:
+            return gpd.GeoDataFrame()
+        df['geometry'] = df['geometry'].apply(lambda x: shape(json.loads(x)) if x else None)
+        df = df.dropna(subset=['geometry'])
+        return gpd.GeoDataFrame(df, geometry='geometry', crs='EPSG:4326')
     except Exception:
         return gpd.GeoDataFrame()
-    if df.empty:
-        return gpd.GeoDataFrame()
-    df['geometry'] = df['geometry'].apply(lambda x: shape(json.loads(x)) if x else None)
-    df = df.dropna(subset=['geometry'])
-    if df.empty:
-        return gpd.GeoDataFrame()
-    return gpd.GeoDataFrame(df, geometry='geometry', crs='EPSG:4326')
 
 # ============================================
 # 6. MAPA DE SENTIMIENTO
@@ -197,12 +191,12 @@ def get_mapa_sentimiento():
             WHEN COALESCE(vss.indice_satisfaccion_ciudadana, 50) >= 75 THEN 'Excelente'
             WHEN COALESCE(vss.indice_satisfaccion_ciudadana, 50) >= 60 THEN 'Bueno'
             WHEN COALESCE(vss.indice_satisfaccion_ciudadana, 50) >= 40 THEN 'Regular'
-            ELSE 'Deficiente' 
+            ELSE 'Deficiente'
         END as nivel_satisfaccion,
         ST_AsGeoJSON(s.geom) as geometry
     FROM seccion s
     LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.pk_seccion = s.pk_seccion
-    WHERE s.id_municipio = :municipio_id AND s.geom IS NOT NULL
+    WHERE s.id_municipio = %(municipio_id)s AND s.geom IS NOT NULL
     """
     df = sql(query, {'municipio_id': MUNICIPIO_ID})
     if not df.empty and 'geometry' in df.columns:
@@ -222,11 +216,11 @@ def get_perfil_genero():
         CASE 
             WHEN pi.lista_mujeres > pi.lista_hombres THEN 'Femenino'
             WHEN pi.lista_hombres > pi.lista_mujeres THEN 'Masculino'
-            ELSE 'Equilibrado' 
+            ELSE 'Equilibrado'
         END as predominancia_genero
     FROM seccion s
     JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion
-    WHERE s.id_municipio = :municipio_id AND pi.anio_padron = 2024 AND pi.lista_nominal_oficial > 0
+    WHERE s.id_municipio = %(municipio_id)s AND pi.anio_padron = 2024 AND pi.lista_nominal_oficial > 0
     ORDER BY s.seccion
     """
     return sql(query, {'municipio_id': MUNICIPIO_ID})
@@ -237,13 +231,13 @@ def get_perfil_genero():
 def get_secciones_estrategicas_20():
     query = """
     SELECT s.seccion, pi.lista_nominal_oficial,
-        ROUND(pi.lista_nominal_oficial::numeric * 100.0 / 
-              (SELECT SUM(lista_nominal_oficial) FROM padron_ine 
-               WHERE anio_padron = 2024 
-                 AND pk_seccion IN (SELECT pk_seccion FROM seccion WHERE id_municipio = :municipio_id)), 2) as pct_peso_electoral
+        ROUND(pi.lista_nominal_oficial::numeric * 100.0 /
+              (SELECT SUM(lista_nominal_oficial) FROM padron_ine
+               WHERE anio_padron = 2024
+                 AND pk_seccion IN (SELECT pk_seccion FROM seccion WHERE id_municipio = %(municipio_id)s)), 2) as pct_peso_electoral
     FROM seccion s
     JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion
-    WHERE s.id_municipio = :municipio_id AND pi.anio_padron = 2024
+    WHERE s.id_municipio = %(municipio_id)s AND pi.anio_padron = 2024
     ORDER BY pi.lista_nominal_oficial DESC
     LIMIT 20
     """
@@ -256,15 +250,15 @@ def get_correlacion_participacion_carencias(anio):
     id_eleccion = get_id_eleccion(anio)
     query = """
     WITH participacion_seccion AS (
-        SELECT s.pk_seccion, s.seccion, COALESCE(SUM(rp.votos), 0) as votos_totales, 
+        SELECT s.pk_seccion, s.seccion, COALESCE(SUM(rp.votos), 0) as votos_totales,
                pi.lista_nominal_oficial,
                ROUND(COALESCE(SUM(rp.votos)::numeric, 0) * 100.0 / NULLIF(pi.lista_nominal_oficial, 0), 2) as participacion_pct
         FROM seccion s
-        LEFT JOIN casilla c ON c.pk_seccion = s.pk_seccion AND c.id_eleccion = :id_eleccion
+        LEFT JOIN casilla c ON c.pk_seccion = s.pk_seccion AND c.id_eleccion = %(id_eleccion)s
         LEFT JOIN resultados_electorales re ON re.pk_casilla = c.pk_casilla
         LEFT JOIN resultados_partido rp ON rp.pk_resultado = re.pk_resultado
-        LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = :anio
-        WHERE s.id_municipio = :municipio_id
+        LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = %(anio)s
+        WHERE s.id_municipio = %(municipio_id)s
         GROUP BY s.pk_seccion, s.seccion, pi.lista_nominal_oficial
     )
     SELECT ps.seccion, COALESCE(ps.participacion_pct, 0) as participacion_pct,
@@ -281,18 +275,18 @@ def get_correlacion_participacion_carencias(anio):
     return sql(query, {'id_eleccion': id_eleccion, 'anio': anio, 'municipio_id': MUNICIPIO_ID})
 
 # ============================================
-# 10. TOP 10 SECCIONES CON MAYOR REZAGO
+# 10. TOP 10 REZAGO
 # ============================================
 def get_seccion_rezago_top10():
     query = """
     SELECT s.seccion, ci.pobtot,
-        ROUND((COALESCE(ci.pct_sin_derechohab, 0) + 
+        ROUND((COALESCE(ci.pct_sin_derechohab, 0) +
                COALESCE(ci.vph_sin_agua::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0) +
                COALESCE(ci.vph_sin_drenaje::numeric * 100.0 / NULLIF(ci.num_viviendas_particulares, 0), 0)
               ) / 3.0, 2) as pct_sin_servicios
     FROM seccion s
     JOIN carencias_inegi ci ON ci.pk_seccion = s.pk_seccion
-    WHERE s.id_municipio = :municipio_id AND ci.pobtot > 0
+    WHERE s.id_municipio = %(municipio_id)s AND ci.pobtot > 0
       AND ci.anio_inegi = (SELECT MAX(anio_inegi) FROM carencias_inegi)
     ORDER BY pct_sin_servicios DESC, ci.pobtot DESC
     LIMIT 10
@@ -316,14 +310,14 @@ def get_riesgo_electoral():
 # ============================================
 def get_satisfaccion_por_servicio_agregado():
     query = """
-    SELECT cs.nombre_categoria, cs.pilar_gobierno, 
+    SELECT cs.nombre_categoria, cs.pilar_gobierno,
         ROUND(AVG(ss.calificacion), 2) as calificacion_promedio,
         COUNT(*) as total_opiniones,
-        CASE 
+        CASE
             WHEN AVG(ss.calificacion) >= 4.0 THEN 'Excelente'
             WHEN AVG(ss.calificacion) >= 3.0 THEN 'Bueno'
             WHEN AVG(ss.calificacion) >= 2.0 THEN 'Regular'
-            ELSE 'Deficiente' 
+            ELSE 'Deficiente'
         END as nivel
     FROM sentimiento_social ss
     JOIN categoria_servicio cs ON cs.id_categoria = ss.id_categoria
@@ -338,17 +332,15 @@ def get_satisfaccion_por_servicio_agregado():
 # ============================================
 def get_alertas_conflicto(umbral_rezago=40, umbral_isc=40):
     query = """
-    SELECT s.seccion,
-        r.pct_sin_servicios_basicos as rezago,
-        COALESCE(vss.indice_satisfaccion_ciudadana, 50) as isc,
-        s.pk_seccion
+    SELECT s.seccion, r.pct_sin_servicios_basicos as rezago,
+        COALESCE(vss.indice_satisfaccion_ciudadana, 50) as isc, s.pk_seccion
     FROM seccion s
     LEFT JOIN vw_rezago_secciones r ON r.pk_seccion = s.pk_seccion
     LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.pk_seccion = s.pk_seccion
-    WHERE s.id_municipio = :municipio_id
-      AND r.pct_sin_servicios_basicos > :umbral_rezago
-      AND COALESCE(vss.indice_satisfaccion_ciudadana, 50) < :umbral_isc
-    ORDER BY r.pct_sin_servicios_basicos DESC, vss.indice_satisfaccion_ciudadana ASC
+    WHERE s.id_municipio = %(municipio_id)s
+      AND r.pct_sin_servicios_basicos > %(umbral_rezago)s
+      AND COALESCE(vss.indice_satisfaccion_ciudadana, 50) < %(umbral_isc)s
+    ORDER BY r.pct_sin_servicios_basicos DESC
     """
     return sql(query, {'municipio_id': MUNICIPIO_ID, 'umbral_rezago': umbral_rezago, 'umbral_isc': umbral_isc})
 
@@ -362,21 +354,20 @@ def get_acciones_prioritarias_24h(top_n=3):
                ROW_NUMBER() OVER (ORDER BY pi.lista_nominal_oficial DESC) as rank_peso
         FROM padron_ine pi
         JOIN seccion s ON s.pk_seccion = pi.pk_seccion
-        WHERE pi.anio_padron = 2024 AND s.id_municipio = :municipio_id
-        ORDER BY pi.lista_nominal_oficial DESC
+        WHERE pi.anio_padron = 2024 AND s.id_municipio = %(municipio_id)s
         LIMIT 20
     )
     SELECT t.seccion, t.lista_nominal_oficial as peso_electoral,
         COALESCE(r.pct_sin_servicios_basicos, 0) as rezago,
         COALESCE(vss.indice_satisfaccion_ciudadana, 50) as isc,
-        ROUND((t.rank_peso * 0.3) + 
-              (COALESCE(r.pct_sin_servicios_basicos, 0) * 0.5) + 
+        ROUND((t.rank_peso * 0.3) +
+              (COALESCE(r.pct_sin_servicios_basicos, 0) * 0.5) +
               ((100 - COALESCE(vss.indice_satisfaccion_ciudadana, 50)) * 0.2), 0) as prioridad_score
     FROM top20 t
     LEFT JOIN vw_rezago_secciones r ON r.pk_seccion = t.pk_seccion
     LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.pk_seccion = t.pk_seccion
     ORDER BY prioridad_score DESC
-    LIMIT :top_n
+    LIMIT %(top_n)s
     """
     return sql(query, {'municipio_id': MUNICIPIO_ID, 'top_n': top_n})
 
@@ -384,17 +375,17 @@ def get_acciones_prioritarias_24h(top_n=3):
 # 15. LISTA DE SECCIONES
 # ============================================
 def get_lista_secciones():
-    df = sql("SELECT seccion FROM seccion WHERE id_municipio = :municipio_id ORDER BY seccion", 
+    df = sql("SELECT seccion FROM seccion WHERE id_municipio = %(municipio_id)s ORDER BY seccion",
              {'municipio_id': MUNICIPIO_ID})
-    return df['seccion'].tolist()
+    return df['seccion'].tolist() if not df.empty else []
 
 # ============================================
 # 16. TOTAL DE SECCIONES
 # ============================================
 def get_total_secciones():
-    df = sql("SELECT COUNT(*) as total FROM seccion WHERE id_municipio = :municipio_id", 
+    df = sql("SELECT COUNT(*) as total FROM seccion WHERE id_municipio = %(municipio_id)s",
              {'municipio_id': MUNICIPIO_ID})
-    return df.iloc[0, 0]
+    return df.iloc[0, 0] if not df.empty else 0
 
 # ============================================
 # 17. VERIFICAR TOP 20
@@ -404,7 +395,7 @@ def es_top20(seccion):
     return seccion in top20['seccion'].values
 
 # ============================================
-# 18. DATOS CONSOLIDADOS DE UNA SECCIÓN
+# 18. DATOS DE UNA SECCIÓN
 # ============================================
 def get_datos_seccion(seccion):
     query = """
@@ -421,53 +412,43 @@ def get_datos_seccion(seccion):
     LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = 2024
     LEFT JOIN vw_rezago_secciones r ON r.seccion = s.seccion
     LEFT JOIN vw_indice_satisfaccion_seccion vss ON vss.seccion = s.seccion
-    WHERE s.seccion = :seccion AND s.id_municipio = :municipio_id
+    WHERE s.seccion = %(seccion)s AND s.id_municipio = %(municipio_id)s
     """
     return sql(query, {'seccion': seccion, 'municipio_id': MUNICIPIO_ID})
 
 # ============================================
-# 19. GENERADOR DE SCRIPT DE TERRITORIO
+# 19. SCRIPT DE TERRITORIO
 # ============================================
 def generar_script_territorio(row):
     mensaje = f"**Sección {row['seccion']}**\n\n"
     poblacion = row['lista_nominal_oficial']
-    if poblacion and poblacion > 0:
-        pct_mujeres = (row['lista_mujeres'] / poblacion * 100)
-        pct_hombres = 100 - pct_mujeres
-    else:
-        pct_mujeres = 0
-        pct_hombres = 0
+    pct_mujeres = (row['lista_mujeres'] / poblacion * 100) if poblacion and poblacion > 0 else 0
+    pct_hombres = 100 - pct_mujeres
     es_femenino = pct_mujeres > 50
     es_top = es_top20(row['seccion'])
     prioridades = []
-    if row['pct_sin_agua'] > 10:
-        prioridades.append("agua potable")
-    if row['pct_sin_drenaje'] > 10:
-        prioridades.append("drenaje")
-    if row['pct_sin_electricidad'] > 5:
-        prioridades.append("electricidad")
-    mensaje += f"👥 **Población:** {poblacion:,} electores ({pct_mujeres:.1f}% mujeres, {pct_hombres:.1f}% hombres).\n"
-    mensaje += f"📉 **Rezago:** {row['rezago']:.1f}% de carencias básicas.\n"
-    mensaje += f"😊 **Satisfacción ciudadana:** {row['isc']:.1f} puntos (ISC).\n"
+    if row['pct_sin_agua'] > 10: prioridades.append("agua potable")
+    if row['pct_sin_drenaje'] > 10: prioridades.append("drenaje")
+    if row['pct_sin_electricidad'] > 5: prioridades.append("electricidad")
+    mensaje += f"👥 **Población:** {poblacion:,} electores ({pct_mujeres:.1f}% mujeres).\n"
+    mensaje += f"📉 **Rezago:** {row['rezago']:.1f}%\n"
+    mensaje += f"😊 **ISC:** {row['isc']:.1f}\n"
     if row['ganador_2024']:
-        mensaje += f"🏛️ **Ganador 2024:** {row['ganador_2024']} con {row['pct_votos']:.1f}% de votos.\n"
-    mensaje += "\n**💧 Prioridades de inversión FAISMUN:**\n"
+        mensaje += f"🏛️ **Ganador 2024:** {row['ganador_2024']} con {row['pct_votos']:.1f}%\n"
+    mensaje += "\n**💧 Prioridades FAISMUN:**\n"
     if prioridades:
         for p in prioridades:
-            mensaje += f"- Mejorar infraestructura de **{p}**.\n"
-        if es_top and row['pct_sin_agua'] > 10:
-            mensaje += f"\n🚨 **PROPUESTA PRIORITARIA:** En esta sección estratégica (Top 20), destinaremos recursos del FAISMUN 2025 para resolver el problema de agua potable.\n"
+            mensaje += f"- **{p}**\n"
     else:
-        mensaje += "- No se detectan carencias críticas en servicios básicos.\n"
+        mensaje += "- Sin carencias críticas.\n"
     if es_femenino:
-        mensaje += "\n👩 **Enfoque de género:** Esta sección tiene mayoría femenina. Priorizaremos mensajes sobre salud, seguridad social y programas de apoyo a madres trabajadoras.\n"
+        mensaje += "\n👩 Mayoría femenina. Enfocar: salud, seguridad social.\n"
     else:
-        mensaje += "\n👨 **Enfoque de género:** Sección con mayoría masculina. Enfatizaremos empleo, infraestructura y seguridad.\n"
+        mensaje += "\n👨 Mayoría masculina. Enfocar: empleo, infraestructura.\n"
     if prioridades:
-        tema = prioridades[0]
-        mensaje += f"\n🎯 **Mensaje clave:** 'Vamos a llevar **{tema}** a tu colonia con el FAISMUN 2025.'"
+        mensaje += f"\n🎯 **Mensaje clave:** 'Vamos a llevar **{prioridades[0]}** a tu colonia.'"
     elif row['isc'] < 40:
-        mensaje += "\n🎯 **Mensaje clave:** 'Escuchamos tu descontento. Iniciamos mesas de trabajo para mejorar los servicios en tu sector.'"
+        mensaje += "\n🎯 **Mensaje clave:** 'Escuchamos tu descontento. Iniciamos mesas de trabajo.'"
     else:
-        mensaje += "\n🎯 **Mensaje clave:** 'Seguimos trabajando por tu bienestar. Gracias por tu confianza.'"
+        mensaje += "\n🎯 **Mensaje clave:** 'Seguimos trabajando por tu bienestar.'"
     return mensaje
