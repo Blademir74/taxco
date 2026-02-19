@@ -309,40 +309,39 @@ footer {
 </style>
 """, unsafe_allow_html=True)
 # Obtener el token de la query string (si existe)
+# Obtener el token de la query string (si existe)
 query_params = st.query_params
 invite_token = query_params.get("invite", [None])
 if isinstance(invite_token, list):
     invite_token = invite_token[0] if invite_token else None
 
-# Si hay token, intentar validarlo con Retroceso Exponencial (Retries)
+# Si hay token, intentar validarlo con reintentos
 if invite_token:
-    invite_token = invite_token.strip() 
+    invite_token = invite_token.strip()
     try:
         import requests
-<<<<<<< HEAD
         import time
-        
-        backend_url = st.secrets["BACKEND_URL"]  # Lee la variable desde los secrets
+
+        backend_url = st.secrets["BACKEND_URL"]
         api_url = f"{backend_url}/api/validate-invite/{invite_token}"
-        
+
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                response = requests.get(api_url, timeout=10) # Timeout evita hambruna
+                response = requests.get(api_url, timeout=10)
                 if response.status_code == 200:
                     data = response.json()
                     st.session_state.tenant_id = data["tenant_id"]
                     st.session_state.email = data["email"]
                     st.session_state.invite_valid = True
-                    st.query_params.clear()  # Limpia el token de la URL
+                    st.query_params.clear()
                     break
                 elif response.status_code == 404:
                     st.error("El enlace de invitación no es válido.")
                     st.stop()
                 else:
-                    # Error servidor, reintentar
                     if attempt < max_retries - 1:
-                        time.sleep(2 ** attempt) # 1s, 2s, 4s
+                        time.sleep(2 ** attempt)
                         continue
                     else:
                         st.error("Servidor ocupado. Intenta de nuevo más tarde.")
@@ -354,30 +353,13 @@ if invite_token:
                 else:
                     st.error("Error de conexión con el servidor de validación.")
                     st.stop()
-                    
-=======
-        backend_url = st.secrets["BACKEND_URL"]  # Lee la variable desde los secrets
-        api_url = f"{backend_url}/api/validate-invite"
-        response = requests.get(f"{api_url}/{invite_token}")
-        if response.status_code == 200:
-            data = response.json()
-            st.session_state.tenant_id = data["tenant_id"]
-            st.session_state.email = data["email"]
-            st.session_state.invite_valid = True
-            st.query_params.clear()  # Limpia el token de la URL
-        else:
-            st.error("El enlace de invitación no es válido o ha expirado.")
-            st.stop()
->>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
     except Exception as e:
         st.error(f"Error al validar invitación: {e}")
         st.stop()
 else:
-    # Si no hay token, verificar si ya hay sesión válida en session_state
     if "invite_valid" not in st.session_state or not st.session_state.invite_valid:
         st.warning("Acceso restringido. Necesitas un enlace de invitación válido.")
         st.stop()
-
 # ============================================
 # CACHING DE DATOS (Optimización)
 # ============================================
