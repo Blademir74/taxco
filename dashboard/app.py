@@ -314,24 +314,46 @@ invite_token = query_params.get("invite", [None])
 if isinstance(invite_token, list):
     invite_token = invite_token[0] if invite_token else None
 
-# Si hay token, intentar validarlo
+# Si hay token, intentar validarlo con Retroceso Exponencial (Retries)
 if invite_token:
+    invite_token = invite_token.strip() 
     try:
-        # Llamar al endpoint de la API para validar el token
         import requests
-        api_url = "http://localhost:8000/api/validate-invite"  # Cambiar por tu URL real
-        response = requests.get(f"{api_url}/{invite_token}")
-        if response.status_code == 200:
-            data = response.json()
-            # Guardar en session_state que el usuario está autorizado
-            st.session_state.tenant_id = data["tenant_id"]
-            st.session_state.email = data["email"]
-            st.session_state.invite_valid = True
-            # Opcional: eliminar el token de la URL para que no se vea
-            st.query_params.clear()
-        else:
-            st.error("El enlace de invitación no es válido o ha expirado.")
-            st.stop()
+        import time
+        
+        backend_url = st.secrets["BACKEND_URL"]  # Lee la variable desde los secrets
+        api_url = f"{backend_url}/api/validate-invite/{invite_token}"
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(api_url, timeout=10) # Timeout evita hambruna
+                if response.status_code == 200:
+                    data = response.json()
+                    st.session_state.tenant_id = data["tenant_id"]
+                    st.session_state.email = data["email"]
+                    st.session_state.invite_valid = True
+                    st.query_params.clear()  # Limpia el token de la URL
+                    break
+                elif response.status_code == 404:
+                    st.error("El enlace de invitación no es válido.")
+                    st.stop()
+                else:
+                    # Error servidor, reintentar
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt) # 1s, 2s, 4s
+                        continue
+                    else:
+                        st.error("Servidor ocupado. Intenta de nuevo más tarde.")
+                        st.stop()
+            except requests.exceptions.RequestException:
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    st.error("Error de conexión con el servidor de validación.")
+                    st.stop()
+                    
     except Exception as e:
         st.error(f"Error al validar invitación: {e}")
         st.stop()
@@ -339,8 +361,59 @@ else:
     # Si no hay token, verificar si ya hay sesión válida en session_state
     if "invite_valid" not in st.session_state or not st.session_state.invite_valid:
         st.warning("Acceso restringido. Necesitas un enlace de invitación válido.")
-        # Mostrar un formulario para que el usuario ingrese su email si quieres otra opción
         st.stop()
+
+# ============================================
+# CACHING DE DATOS (Optimización)
+# ============================================
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_kpis_participacion():
+    return get_kpis_participacion()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_fuerza_electoral(anio):
+    return get_fuerza_electoral(anio)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_outliers_integridad():
+    return get_outliers_integridad()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_mapa_ganadores(anio):
+    return get_mapa_ganadores(anio)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_mapa_rezago():
+    return get_mapa_rezago()
+    
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_perfil_genero():
+    return get_perfil_genero()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_mapa_sentimiento():
+    return get_mapa_sentimiento()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_correlacion_participacion_carencias(anio):
+    return get_correlacion_participacion_carencias(anio)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_seccion_rezago_top10():
+    return get_seccion_rezago_top10()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_secciones_estrategicas_20():
+    return get_secciones_estrategicas_20()
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_riesgo_electoral():
+    return get_riesgo_electoral()
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_satisfaccion_por_servicio_agregado():
+    return get_satisfaccion_por_servicio_agregado()
+
 # ============================================
 # HEADER CON ESCUDO DE TAXCO
 # ============================================
@@ -369,6 +442,7 @@ with col_logo:
 with col_titulo:
     st.title(f"🗳️ Dashboard Electoral Gobierno - {MUNICIPIO_NOMBRE}")
     st.caption(f"Sistema de Inteligencia Política | Actualizado: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+
 
 # ============================================
 # SIDEBAR - PANEL DE CONTROL + ACCIONES 24H
@@ -497,9 +571,9 @@ with tab1:
     st.header("🎯 Indicadores Estratégicos de Mando")
     
     # Cargar datos
-    df_participacion = get_kpis_participacion()
-    df_fuerza = get_fuerza_electoral(anio_seleccionado)
-    df_outliers = get_outliers_integridad()
+    df_participacion = load_kpis_participacion()
+    df_fuerza = load_fuerza_electoral(anio_seleccionado)
+    df_outliers = load_outliers_integridad()
     
     # Validar datos del año seleccionado
     df_year = df_participacion[df_participacion['anio'] == anio_seleccionado]
@@ -635,7 +709,7 @@ with tab1:
     st.header("🗺️ Mapa Electoral Georreferenciado")
     
     if vista_mapa == "Electoral (Ganadores)":
-        gdf_mapa = get_mapa_ganadores(anio_seleccionado)
+        gdf_mapa = load_mapa_ganadores(anio_seleccionado)
         if not gdf_mapa.empty and 'geometry' in gdf_mapa.columns:
             # Íconos y popup
             gdf_mapa['icono_partido'] = gdf_mapa['ganador'].map({
@@ -708,7 +782,7 @@ with tab1:
             st.warning(f"⚠️ No hay datos geográficos para {anio_seleccionado}")
     
     elif vista_mapa == "Social (Rezago INEGI)":
-        gdf_rezago = get_mapa_rezago()
+        gdf_rezago = load_mapa_rezago()
         if gdf_rezago.empty:
             st.warning("⚠️ No hay datos de rezago social disponibles para el municipio.")
         else:
@@ -755,8 +829,8 @@ with tab1:
             """, unsafe_allow_html=True)
     
     elif vista_mapa == "Demográfico (Género)":
-        df_genero = get_perfil_genero()
-        gdf_mapa_base = get_mapa_ganadores(2024)
+        df_genero = load_perfil_genero()
+        gdf_mapa_base = load_mapa_ganadores(2024)
         if not gdf_mapa_base.empty and not df_genero.empty:
             gdf_genero = gdf_mapa_base.merge(
                 df_genero[['seccion', 'pct_mujeres', 'predominancia_genero']],
@@ -809,7 +883,7 @@ with tab1:
             st.plotly_chart(fig_genero, use_container_width=True, config={'scrollZoom': True})
     
     elif vista_mapa == "Sentimiento Social (ISC)":
-        gdf_sentimiento = get_mapa_sentimiento()
+        gdf_sentimiento = load_mapa_sentimiento()
         if not gdf_sentimiento.empty and 'geometry' in gdf_sentimiento.columns:
             # Popup con nivel de satisfacción
             gdf_sentimiento['hover_text'] = gdf_sentimiento.apply(lambda row:
@@ -888,7 +962,7 @@ with tab1:
     # ANÁLISIS DE CORRELACIÓN
     # ========================================
     st.header("📊 Análisis de Correlación Social-Electoral")
-    df_correlacion = get_correlacion_participacion_carencias(anio_seleccionado)
+    df_correlacion = load_correlacion_participacion_carencias(anio_seleccionado)
     if not df_correlacion.empty:
         col1, col2 = st.columns(2)
         with col1:
@@ -959,7 +1033,7 @@ with tab1:
 # ============================================
 with tab2:
     st.header(f"💰 Prioridades de Inversión FAISMUN 2025 - ${PRESUPUESTO_FAISMUN_2025:,.0f}")
-    df_rezago_top = get_seccion_rezago_top10()
+    df_rezago_top = load_seccion_rezago_top10()
     if df_rezago_top is not None and not df_rezago_top.empty:
         total_pob = df_rezago_top['pobtot'].sum()
         df_rezago_top['presupuesto_asignado'] = (df_rezago_top['pobtot'] / total_pob * PRESUPUESTO_FAISMUN_2025).round(0).astype(int)
@@ -1012,8 +1086,8 @@ with tab2:
 # ============================================
 with tab3:
     st.header("👥 Análisis Demográfico y Género")
-    df_genero = get_perfil_genero()
-    df_estrategicas = get_secciones_estrategicas_20()
+    df_genero = load_perfil_genero()
+    df_estrategicas = load_secciones_estrategicas_20()
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("⚖️ Brecha de Género Municipal")
@@ -1068,7 +1142,7 @@ with tab3:
 # ============================================
 with tab4:
     st.header("🚨 Análisis de Riesgo Electoral - Operación Cicatrización")
-    df_riesgo = get_riesgo_electoral()
+    df_riesgo = load_riesgo_electoral()
     if df_riesgo is not None and not df_riesgo.empty:
         alto_riesgo = len(df_riesgo[df_riesgo['nivel_riesgo_electoral'] == 'ALTO RIESGO'])
         medio_riesgo = len(df_riesgo[df_riesgo['nivel_riesgo_electoral'] == 'RIESGO MEDIO'])
@@ -1125,7 +1199,7 @@ with tab4:
             - 📈 Re-medición de satisfacción en 15 días
             """)
         st.subheader("📊 Satisfacción por Tipo de Servicio")
-        df_servicios = get_satisfaccion_por_servicio_agregado()
+        df_servicios = load_satisfaccion_por_servicio_agregado()
         if df_servicios is not None and not df_servicios.empty:
             fig_servicios = px.bar(
                 df_servicios,
