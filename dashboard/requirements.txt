@@ -6,8 +6,4 @@ pandas==2.2.3
 openpyxl==3.1.5
 requests==2.32.3
 plotly==5.24.1
-<<<<<<< HEAD
 geopandas==1.0.1
-=======
-geopandas==1.0.1
->>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d

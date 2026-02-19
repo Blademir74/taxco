@@ -10,40 +10,6 @@ from shapely.geometry import shape
 # ============================================
 # CONEXIÓN SEGURA — psycopg3 + SQLAlchemy text()
 # ============================================
-<<<<<<< HEAD
-
-def get_engine():
-    # Intentar obtener URL de secretos de Streamlit o variables de entorno
-    database_url = ""
-    try:
-        if "DATABASE_URL" in st.secrets:
-            database_url = st.secrets["DATABASE_URL"]
-    except Exception:
-        pass
-    
-    if not database_url:
-        database_url = os.getenv("DATABASE_URL", "")
-
-    # Si no hay URL completa, construirla (fallback)
-    if not database_url:
-        database_url = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    
-    # Asegurar prefijo correcto para SQLAlchemy 2.0+
-    database_url = database_url.replace("postgresql+psycopg2://", "postgresql+psycopg://")
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql+psycopg://", 1)
-    if database_url.startswith("postgresql://"):
-        database_url = "postgresql+psycopg://" + database_url[len("postgresql://"):]
-
-    # FORZAR SSL MODE (Crítico para Neon)
-    if "?sslmode=" not in database_url:
-        if "?" in database_url:
-            database_url += "&sslmode=require"
-        else:
-            database_url += "?sslmode=require"
-
-    return create_engine(database_url, pool_pre_ping=True, connect_args={'connect_timeout': 10})
-=======
 def get_engine():
     database_url = os.getenv("DATABASE_URL", "")
     if not database_url:
@@ -52,7 +18,6 @@ def get_engine():
     if database_url.startswith("postgresql://"):
         database_url = "postgresql+psycopg://" + database_url[len("postgresql://"):]
     return create_engine(database_url, pool_pre_ping=True)
->>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
 
 def sql(query, params=None):
     """Ejecuta query y retorna DataFrame. Usa :param en queries."""
@@ -141,19 +106,11 @@ def get_mapa_ganadores(anio):
     WITH votos_por_seccion AS (
         SELECT s.pk_seccion, s.seccion, p.clave_partido as partido, SUM(rp.votos) as votos
         FROM seccion s
-<<<<<<< HEAD
         LEFT JOIN casilla c ON c.pk_seccion = s.pk_seccion AND c.id_eleccion = :id_eleccion
         LEFT JOIN resultados_electorales re ON re.pk_casilla = c.pk_casilla
         LEFT JOIN resultados_partido rp ON rp.pk_resultado = re.pk_resultado
         LEFT JOIN partido p ON p.id_partido = rp.id_partido
         WHERE s.id_municipio = :municipio_id
-=======
-        LEFT JOIN casilla c ON c.pk_seccion = s.pk_seccion AND c.id_eleccion = %(id_eleccion)s
-        LEFT JOIN resultados_electorales re ON re.pk_casilla = c.pk_casilla
-        LEFT JOIN resultados_partido rp ON rp.pk_resultado = re.pk_resultado
-        LEFT JOIN partido p ON p.id_partido = rp.id_partido
-        WHERE s.id_municipio = %(municipio_id)s
->>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
         GROUP BY s.pk_seccion, s.seccion, p.clave_partido
     ),
     ganador_por_seccion AS (
@@ -168,18 +125,10 @@ def get_mapa_ganadores(anio):
            ST_AsGeoJSON(s.geom) as geometry
     FROM seccion s
     LEFT JOIN ganador_por_seccion g ON g.pk_seccion = s.pk_seccion
-<<<<<<< HEAD
     LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = :anio
     WHERE s.id_municipio = :municipio_id AND s.geom IS NOT NULL
     """
     df = sql(query, {'id_eleccion': id_eleccion, 'municipio_id': MUNICIPIO_ID, 'anio': anio})
-=======
-    LEFT JOIN padron_ine pi ON pi.pk_seccion = s.pk_seccion AND pi.anio_padron = %(anio)s
-    WHERE s.id_municipio = %(municipio_id)s AND s.geom IS NOT NULL
-    """
-    params = {'id_eleccion': id_eleccion, 'municipio_id': MUNICIPIO_ID, 'anio': anio}
-    df = pd.read_sql(query, engine, params=params)
->>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
     if not df.empty and 'geometry' in df.columns:
         df['geometry'] = df['geometry'].apply(lambda x: shape(json.loads(x)) if x else None)
         df = df.dropna(subset=['geometry'])
@@ -509,8 +458,4 @@ def generar_script_territorio(row):
         mensaje += "\n🎯 **Mensaje clave:** 'Escuchamos tu descontento. Iniciamos mesas de trabajo para mejorar los servicios en tu sector.'"
     else:
         mensaje += "\n🎯 **Mensaje clave:** 'Seguimos trabajando por tu bienestar. Gracias por tu confianza.'"
-<<<<<<< HEAD
     return mensaje
-=======
-    return mensaje
->>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d

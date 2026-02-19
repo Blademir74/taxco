@@ -1,51 +1,50 @@
-import streamlit as st
 import os
+import streamlit as st
 
-DATABASE_URL = st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL"))
-DB_HOST = "ep-dark-salad-aiwt2y0r-pooler.c-4.us-east-1.aws.neon.tech"
-DB_PORT = "5432"
-DB_NAME = "neondb"
-DB_USER = "neondb_owner"
-DB_PASSWORD = "npg_ZxOqBGdQ40hf"
+# ============================================
+# LEER SECRETS DE STREAMLIT O ENV
+# ============================================
+def get_secret(key, default=""):
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.getenv(key, default)
 
+DATABASE_URL = get_secret("DATABASE_URL")
+BACKEND_URL = get_secret("BACKEND_URL", "https://taxco-backend-api.onrender.com")
+
+# Credenciales locales (fallback desarrollo)
+DB_HOST = get_secret("DB_HOST", "ep-dark-salad-aiwt2y0r-pooler.c-4.us-east-1.aws.neon.tech")
+DB_PORT = get_secret("DB_PORT", "5432")
+DB_NAME = get_secret("DB_NAME", "neondb")
+DB_USER = get_secret("DB_USER", "neondb_owner")
+DB_PASSWORD = get_secret("DB_PASSWORD", "npg_ZxOqBGdQ40hf")
+
+# ============================================
+# CONFIGURACIÓN DEL MUNICIPIO
+# ============================================
 MUNICIPIO_ID = 56
-MUNICIPIO_NOMBRE = "Taxco de Alarcon"
-ESTADO = "Guerrero"
-
+MUNICIPIO_NOMBRE = "Taxco de Alarcón"
 ANIOS_DISPONIBLES = [2018, 2021, 2024]
-
-MAPEO_ELECCIONES = {2018: 1, 2021: 2, 2024: 3}
-
 PRESUPUESTO_FAISMUN_2025 = 203_700_000
 
-COLORES_PARTIDOS = {
-    'MORENA': '#B8242B',
-    'PAN': '#0066CC',
-    'PRI': '#FF0000',
-    'PRD': '#FFD700',
-    'PT': '#FF0000',
-    'PVEM': '#00A859',
-    'MC': '#FF6600',
-    'NA': '#00CCFF',
-    'PES': '#9B26AF',
-    'RSP': '#9C27B0',
-    'FXM': '#673AB7',
-    'INDEPENDIENTE': '#888888',
-    'SIN DATOS': '#CCCCCC'
+CENTRO_MAPA = {"lat": 18.5553, "lon": -99.6058}
+ZOOM_INICIAL = 12
+
+MAPEO_ELECCIONES = {
+    2018: 1,
+    2021: 2,
+    2024: 3
 }
 
-CENTRO_MAPA = {"lat": 18.557, "lon": -99.605}
-ZOOM_INICIAL = 10.5
-
-UMBRAL_PARTICIPACION_ALTA = 100
-UMBRAL_REZAGO_ALTO = 40
-UMBRAL_ISC_DEFICIENTE = 40
-UMBRAL_ISC_BUENO = 60
-UMBRAL_ISC_EXCELENTE = 75
-
-PESO_ENCUESTA_CASA = 1.0
-PESO_FORO_CIUDADANO = 0.85
-PESO_REUNION_VECINAL = 0.80
-PESO_REDES_SOCIALES = 0.60
-PESO_DENUNCIA_911 = 0.95
-PESO_SOLICITUD_OFICIAL = 0.90
+COLORES_PARTIDOS = {
+    "MORENA": "#8B0000",
+    "PAN": "#0047AB",
+    "PRI": "#006847",
+    "PRD": "#FFCC00",
+    "MC": "#FF6600",
+    "PT": "#CC0000",
+    "PVEM": "#00A550",
+    "NA": "#003087",
+    "SIN DATOS": "#888888"
+}
