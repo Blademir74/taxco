@@ -1,5 +1,5 @@
 // Configuración
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://taxco-backend-api.onrender.com/api';
 // Para pruebas locales: 'http://localhost:8000/api'
 
 const STORAGE_KEY = 'diagnosticos_pendientes';

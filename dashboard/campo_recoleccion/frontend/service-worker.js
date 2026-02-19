@@ -34,7 +34,7 @@ async function sincronizarDiagnosticos() {
 
   for (let diag of pendientes) {
     try {
-      const response = await fetch('https://tusitio.com/api/recoleccion', {
+      const response = await fetch('https://taxco-backend-api.onrender.com/api/recoleccion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(diag)
