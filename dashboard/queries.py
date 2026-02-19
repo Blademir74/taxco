@@ -6,6 +6,8 @@ import json
 import psycopg2
 import psycopg2.extras
 from shapely.geometry import shape
+from shapely import wkb
+import binascii
 from config import *
 
 # ============================================
@@ -138,7 +140,19 @@ def get_mapa_ganadores(anio):
     """
     df = sql(query, {'id_eleccion': id_eleccion, 'municipio_id': MUNICIPIO_ID, 'anio': anio})
     if not df.empty and 'geometry' in df.columns:
-        df['geometry'] = df['geometry'].apply(lambda x: shape(json.loads(x)) if x else None)
+        def parse_geom(x):
+            if not x:
+                return None
+            try:
+                # Intentar WKB hex primero
+                return wkb.loads(bytes.fromhex(x))
+            except Exception:
+                try:
+                    # Intentar GeoJSON
+                    return shape(json.loads(x))
+                except Exception:
+                    return None
+        df['geometry'] = df['geometry'].apply(parse_geom)
         df = df.dropna(subset=['geometry'])
         return gpd.GeoDataFrame(df, geometry='geometry', crs='EPSG:4326')
     return gpd.GeoDataFrame()
@@ -171,7 +185,19 @@ def get_mapa_rezago():
         df = sql(query, {'municipio_id': MUNICIPIO_ID})
         if df.empty:
             return gpd.GeoDataFrame()
-        df['geometry'] = df['geometry'].apply(lambda x: shape(json.loads(x)) if x else None)
+        def parse_geom(x):
+            if not x:
+                return None
+            try:
+                # Intentar WKB hex primero
+                return wkb.loads(bytes.fromhex(x))
+            except Exception:
+                try:
+                    # Intentar GeoJSON
+                    return shape(json.loads(x))
+                except Exception:
+                    return None
+        df['geometry'] = df['geometry'].apply(parse_geom)
         df = df.dropna(subset=['geometry'])
         return gpd.GeoDataFrame(df, geometry='geometry', crs='EPSG:4326')
     except Exception:
@@ -200,7 +226,19 @@ def get_mapa_sentimiento():
     """
     df = sql(query, {'municipio_id': MUNICIPIO_ID})
     if not df.empty and 'geometry' in df.columns:
-        df['geometry'] = df['geometry'].apply(lambda x: shape(json.loads(x)) if x else None)
+        def parse_geom(x):
+            if not x:
+                return None
+            try:
+                # Intentar WKB hex primero
+                return wkb.loads(bytes.fromhex(x))
+            except Exception:
+                try:
+                    # Intentar GeoJSON
+                    return shape(json.loads(x))
+                except Exception:
+                    return None
+        df['geometry'] = df['geometry'].apply(parse_geom)
         df = df.dropna(subset=['geometry'])
         return gpd.GeoDataFrame(df, geometry='geometry', crs='EPSG:4326')
     return gpd.GeoDataFrame()
@@ -355,7 +393,6 @@ def get_acciones_prioritarias_24h(top_n=3):
         FROM padron_ine pi
         JOIN seccion s ON s.pk_seccion = pi.pk_seccion
         WHERE pi.anio_padron = 2024 AND s.id_municipio = %(municipio_id)s
-        ORDER BY pi.lista_nominal_oficial DESC
         LIMIT 20
     )
     SELECT t.seccion, t.lista_nominal_oficial as peso_electoral,
