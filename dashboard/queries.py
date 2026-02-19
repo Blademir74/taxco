@@ -8,23 +8,35 @@ import json
 from shapely.geometry import shape
 
 # ============================================
-# CONEXIÓN SEGURA — psycopg3 + SQLAlchemy text()
+# CONEXIÓN SEGURA — psycopg2 + exec_driver_sql
 # ============================================
+_engine = None
+
 def get_engine():
+    global _engine
+    if _engine is not None:
+        return _engine
     database_url = os.getenv("DATABASE_URL", "")
     if not database_url:
-        database_url = f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require"
-    database_url = database_url.replace("postgresql+psycopg2://", "postgresql+psycopg://")
+        database_url = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=require"
+    if database_url.startswith("postgresql+psycopg://") and "psycopg2" not in database_url:
+        database_url = database_url.replace("postgresql+psycopg://", "postgresql+psycopg2://")
     if database_url.startswith("postgresql://"):
-        database_url = "postgresql+psycopg://" + database_url[len("postgresql://"):]
-    return create_engine(database_url, pool_pre_ping=True)
+        database_url = "postgresql+psycopg2://" + database_url[len("postgresql://"):]
+    _engine = create_engine(database_url, pool_pre_ping=True, connect_args={"sslmode": "require"})
+    return _engine
 
 def sql(query, params=None):
-    """Ejecuta query y retorna DataFrame. Usa :param en queries."""
+    """Ejecuta query retornando DataFrame. Params usan :nombre."""
+    import re as _re
     engine = get_engine()
+    if params:
+        query = _re.sub(r":([a-zA-Z_][a-zA-Z0-9_]*)", lambda m: "%(" + m.group(1) + ")s", query)
     with engine.connect() as conn:
-        result = conn.execute(text(query), params or {})
-        return pd.DataFrame(result.fetchall(), columns=result.keys())
+        result = conn.exec_driver_sql(query, params or {})
+        rows = result.fetchall()
+        cols = list(result.keys())
+        return pd.DataFrame(rows, columns=cols) if rows else pd.DataFrame(columns=cols)
 
 def get_id_eleccion(anio):
     return MAPEO_ELECCIONES.get(anio, 3)
