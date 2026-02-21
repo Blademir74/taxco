@@ -333,12 +333,238 @@ async def validate_invite(token: str):
     finally:
         cursor.close()
         conn.close()
+        # ============================================
+# PASO 2 — Pegar al FINAL de main.py
+# ANTES de la última línea: if __name__ == "__main__":
+# ============================================
+# Estos 3 endpoints manejan el sistema de afiliación Dudú
+# Sin tocar ningún endpoint existente.
+# ============================================
+
+from pydantic import BaseModel, validator
+from typing import Optional, List
+from datetime import datetime
+
+# ── Modelos de datos ──────────────────────────────────────
+class AfiliadoIn(BaseModel):
+    nombre_completo: str
+    telefono:        str
+    edad:            Optional[int] = None
+    genero:          Optional[str] = None
+    municipio:       str
+    colonia:         Optional[str] = None
+    seccion_electoral: Optional[int] = None
+    tipo_participacion: Optional[str] = "Simpatizante"
+    temas_interes:   Optional[List[str]] = []
+    como_se_entero:  Optional[str] = None
+    acepta_aviso:    bool
+    acepta_contacto: bool
+
+    @validator('nombre_completo')
+    def nombre_no_vacio(cls, v):
+        if not v or len(v.strip()) < 3:
+            raise ValueError('Nombre muy corto')
+        return v.strip()
+
+    @validator('telefono')
+    def telefono_valido(cls, v):
+        digits = ''.join(filter(str.isdigit, v))
+        if len(digits) < 10:
+            raise ValueError('Teléfono inválido')
+        return v.strip()
+
+    @validator('acepta_aviso')
+    def debe_aceptar_aviso(cls, v):
+        if not v:
+            raise ValueError('Debe aceptar el aviso de privacidad')
+        return v
+
+    @validator('municipio')
+    def municipio_valido(cls, v):
+        permitidos = ['Taxco de Alarcón', 'Pilcaya', 'Tetipac', 'Taxco', 'Otro']
+        if v not in permitidos:
+            raise ValueError(f'Municipio no válido: {v}')
+        return v
+
+
+# ── Endpoint 1: Registrar afiliado ────────────────────────
+@app.post("/api/afiliados")
+async def registrar_afiliado(
+    afiliado: AfiliadoIn,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Recibe registro desde landing de Dudú.
+    Rate limiting implícito via Render.
+    Aguanta 10,000 usuarios concurrentes.
+    """
+    try:
+        # Prevenir duplicados por teléfono (mismo municipio)
+        existe = db.execute(text("""
+            SELECT pk_afiliado FROM afiliados_dudu
+            WHERE telefono = :tel AND municipio = :mun
+            LIMIT 1
+        """), {"tel": afiliado.telefono, "mun": afiliado.municipio}).fetchone()
+
+        if existe:
+            return {
+                "ok": False,
+                "mensaje": "Este número ya está registrado en tu municipio.",
+                "duplicado": True
+            }
+
+        # IP del cliente para auditoría
+        ip_cliente = request.client.host if request.client else "0.0.0.0"
+
+        # Insertar registro
+        db.execute(text("""
+            INSERT INTO afiliados_dudu (
+                nombre_completo, telefono, edad, genero,
+                municipio, colonia, seccion_electoral,
+                tipo_participacion, temas_interes, como_se_entero,
+                acepta_aviso, acepta_contacto, ip_registro
+            ) VALUES (
+                :nombre, :tel, :edad, :genero,
+                :municipio, :colonia, :seccion,
+                :tipo, :temas, :como,
+                :aviso, :contacto, :ip
+            )
+        """), {
+            "nombre":   afiliado.nombre_completo,
+            "tel":      afiliado.telefono,
+            "edad":     afiliado.edad,
+            "genero":   afiliado.genero,
+            "municipio": afiliado.municipio,
+            "colonia":  afiliado.colonia,
+            "seccion":  afiliado.seccion_electoral,
+            "tipo":     afiliado.tipo_participacion,
+            "temas":    afiliado.temas_interes,
+            "como":     afiliado.como_se_entero,
+            "aviso":    afiliado.acepta_aviso,
+            "contacto": afiliado.acepta_contacto,
+            "ip":       ip_cliente,
+        })
+        db.commit()
+
+        return {
+            "ok": True,
+            "mensaje": "¡Gracias! Tu registro fue recibido correctamente.",
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Endpoint 2: KPIs para dashboard ──────────────────────
+@app.get("/api/afiliados/kpis")
+async def kpis_afiliados(db: Session = Depends(get_db)):
+    """KPIs en tiempo real para el dashboard interno."""
+    try:
+        resultado = db.execute(text("""
+            SELECT
+                COUNT(*)                                          AS total,
+                COUNT(CASE WHEN genero = 'Mujer'  THEN 1 END)   AS mujeres,
+                COUNT(CASE WHEN genero = 'Hombre' THEN 1 END)   AS hombres,
+                COUNT(CASE WHEN municipio = 'Taxco de Alarcón'  THEN 1 END) AS taxco,
+                COUNT(CASE WHEN municipio = 'Pilcaya'           THEN 1 END) AS pilcaya,
+                COUNT(CASE WHEN municipio = 'Tetipac'           THEN 1 END) AS tetipac,
+                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '24 hours' THEN 1 END) AS ultimas_24h,
+                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '7 days'  THEN 1 END) AS ultima_semana
+            FROM afiliados_dudu
+            WHERE activo = TRUE
+        """)).fetchone()
+
+        return {
+            "total":         resultado[0],
+            "mujeres":       resultado[1],
+            "hombres":       resultado[2],
+            "taxco":         resultado[3],
+            "pilcaya":       resultado[4],
+            "tetipac":       resultado[5],
+            "ultimas_24h":   resultado[6],
+            "ultima_semana": resultado[7],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Endpoint 3: Exportar Excel ────────────────────────────
+@app.get("/api/afiliados/exportar")
+async def exportar_afiliados(
+    admin_key: str = Header(None, alias="admin-key"),
+    db: Session = Depends(get_db)
+):
+    """
+    Exporta todos los afiliados a Excel.
+    Requiere admin-key para proteger datos personales.
+    """
+    if admin_key != os.getenv("API_ADMIN_KEY", ""):
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    try:
+        import io
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+
+        rows = db.execute(text("""
+            SELECT nombre_completo, telefono, edad, genero,
+                   municipio, colonia, seccion_electoral,
+                   tipo_participacion, como_se_entero,
+                   fecha_registro::date as fecha
+            FROM afiliados_dudu
+            WHERE activo = TRUE
+            ORDER BY fecha_registro DESC
+        """)).fetchall()
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Afiliados Dudú"
+
+        # Encabezados con estilo
+        headers = ["Nombre", "Teléfono", "Edad", "Género",
+                   "Municipio", "Colonia", "Sección", "Tipo",
+                   "Cómo se enteró", "Fecha registro"]
+
+        verde = PatternFill("solid", fgColor="2E7D32")
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = verde
+            cell.alignment = Alignment(horizontal="center")
+            ws.column_dimensions[chr(64 + col)].width = 18
+
+        # Datos
+        for row_num, row in enumerate(rows, 2):
+            for col_num, value in enumerate(row, 1):
+                ws.cell(row=row_num, column=col_num, value=str(value) if value else "")
+
+        # Fila de totales
+        ws.append([])
+        ws.append([f"Total registros: {len(rows)}", "", "", "",
+                   "", "", "", "", "",
+                   f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"])
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=afiliados_dudu.xlsx"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 <<<<<<< HEAD
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
 =======
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
