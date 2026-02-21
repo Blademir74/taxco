@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 from datetime import datetime, timezone, timedelta
@@ -11,43 +11,30 @@ import tempfile
 from starlette.background import BackgroundTask
 from fastapi.responses import FileResponse
 import uuid
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from fastapi import Header
+from typing import Optional, List
 import logging
+import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from fastapi.responses import StreamingResponse
 
-# Configurar logging para ver errores en Render
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="API de Recolección Territorial - Taxco")
 
-<<<<<<< HEAD
-
-# CORS: Configuración explícita para Streamlit Cloud y Localhost
-origins = [
-    "http://localhost:8501",
-    "https://share.streamlit.io",
-    "https://taxco-dashboard.streamlit.app",  # Ajustar a la URL real de tu app
-    "*"  # Permitir todo por ahora para debug, pero con allow_credentials=True requiere orígenes explícitos si se usa cookies/auth headers
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Para simplificar debugging inicial. En producción, usar lista 'origins'
-    allow_credentials=True,
-=======
-# CORS (permite todos los orígenes, ajusta en producción)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
->>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ============================================
-<<<<<<< HEAD
-# Health Check & Root (Keep-Alive)
+# Health Check & Root
 # ============================================
 @app.get("/")
 def read_root():
@@ -55,12 +42,10 @@ def read_root():
 
 @app.get("/api/health")
 def health_check():
-    """Endpoint ligero para evitar Cold Starts de Render"""
     return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-
 # ============================================
-# Endpoints públicos
+# Endpoints públicos — App de campo
 # ============================================
 
 @app.get("/api/secciones")
@@ -86,7 +71,6 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
     conn = engine.raw_connection()
     cursor = conn.cursor()
     try:
-        # Validar sección
         cursor.execute(
             "SELECT pk_seccion FROM seccion WHERE seccion = %s AND id_municipio = 56",
             (diagnostico.seccion,)
@@ -96,7 +80,6 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
             raise HTTPException(status_code=404, detail="Sección no encontrada")
         pk_seccion = result[0]
 
-        # Fuente "Encuesta de Campo"
         cursor.execute("SELECT id_fuente FROM fuente_sentimiento WHERE nombre_fuente = 'Encuesta de Campo'")
         row_fuente = cursor.fetchone()
         if not row_fuente:
@@ -104,7 +87,6 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
             row_fuente = cursor.fetchone()
         id_fuente = row_fuente[0]
 
-        # Insertar sentimientos
         sentimientos = [
             ("Agua", diagnostico.sentimiento.agua),
             ("Basura", diagnostico.sentimiento.basura),
@@ -118,12 +100,7 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
                 row_cat = cursor.fetchone()
             id_categoria = row_cat[0]
 
-            if calif >= 4:
-                polaridad = 0.8
-            elif calif >= 3:
-                polaridad = 0.3
-            else:
-                polaridad = -0.5
+            polaridad = 0.8 if calif >= 4 else (0.3 if calif >= 3 else -0.5)
 
             cursor.execute("""
                 INSERT INTO sentimiento_social 
@@ -131,7 +108,6 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (pk_seccion, id_fuente, id_categoria, calif, polaridad, True, diagnostico.fecha_recoleccion))
 
-        # Insertar simpatizante
         cursor.execute("""
             INSERT INTO simpatizantes (pk_seccion, nombre, contacto, es_mujer, notas, fecha_registro)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -142,28 +118,22 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
               diagnostico.simpatizante.notas,
               diagnostico.fecha_recoleccion))
 
-        # Evidencia fotográfica
         if diagnostico.evidencia and diagnostico.evidencia.foto_base64:
             base_dir = os.path.dirname(os.path.abspath(__file__))
             evidencias_dir = os.path.join(base_dir, "evidencias")
             os.makedirs(evidencias_dir, exist_ok=True)
-
             filename = f"evidencia_{diagnostico.seccion}_{uuid.uuid4()}.jpg"
             filepath = os.path.join(evidencias_dir, filename)
-
             foto_data = diagnostico.evidencia.foto_base64
             if ',' in foto_data:
                 foto_data = foto_data.split(',')[1]
-
             with open(filepath, "wb") as f:
                 f.write(base64.b64decode(foto_data))
-
             cursor.execute("""
                 INSERT INTO evidencias (pk_seccion, ruta_archivo, comentario, fecha_registro)
                 VALUES (%s, %s, %s, %s)
             """, (pk_seccion, filepath, diagnostico.evidencia.comentario, diagnostico.fecha_recoleccion))
 
-        # GPS
         if diagnostico.latitud is not None and diagnostico.longitud is not None:
             cursor.execute("""
                 INSERT INTO logs_gps (pk_seccion, latitud, longitud, fecha_registro)
@@ -185,9 +155,8 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
         conn.close()
 
 # ============================================
-# Endpoint de exportación Excel
+# Exportar Excel campo
 # ============================================
-
 @app.get("/api/exportar-excel")
 async def exportar_excel():
     conn = engine.raw_connection()
@@ -196,12 +165,8 @@ async def exportar_excel():
     tmp.close()
     try:
         df_sentimiento = pd.read_sql("""
-            SELECT 
-                s.seccion,
-                cs.nombre_categoria as servicio,
-                ss.calificacion,
-                ss.sentimiento_polaridad,
-                ss.fecha_registro
+            SELECT s.seccion, cs.nombre_categoria as servicio,
+                   ss.calificacion, ss.sentimiento_polaridad, ss.fecha_registro
             FROM sentimiento_social ss
             JOIN seccion s ON ss.pk_seccion = s.pk_seccion
             JOIN categoria_servicio cs ON ss.id_categoria = cs.id_categoria
@@ -209,35 +174,22 @@ async def exportar_excel():
         """, conn)
 
         df_simpatizantes = pd.read_sql("""
-            SELECT 
-                s.seccion,
-                sim.nombre,
-                sim.contacto,
-                sim.es_mujer,
-                sim.notas,
-                sim.fecha_registro
+            SELECT s.seccion, sim.nombre, sim.contacto,
+                   sim.es_mujer, sim.notas, sim.fecha_registro
             FROM simpatizantes sim
             JOIN seccion s ON sim.pk_seccion = s.pk_seccion
             ORDER BY sim.fecha_registro DESC
         """, conn)
 
         df_evidencias = pd.read_sql("""
-            SELECT 
-                s.seccion,
-                e.ruta_archivo,
-                e.comentario,
-                e.fecha_registro
+            SELECT s.seccion, e.ruta_archivo, e.comentario, e.fecha_registro
             FROM evidencias e
             JOIN seccion s ON e.pk_seccion = s.pk_seccion
             ORDER BY e.fecha_registro DESC
         """, conn)
 
         df_gps = pd.read_sql("""
-            SELECT 
-                s.seccion,
-                g.latitud,
-                g.longitud,
-                g.fecha_registro
+            SELECT s.seccion, g.latitud, g.longitud, g.fecha_registro
             FROM logs_gps g
             JOIN seccion s ON g.pk_seccion = s.pk_seccion
             ORDER BY g.fecha_registro DESC
@@ -264,9 +216,8 @@ async def exportar_excel():
         conn.close()
 
 # ============================================
-# Endpoints de administración e invitaciones
+# Endpoints de invitaciones
 # ============================================
-
 class InvitacionRequest(BaseModel):
     email: EmailStr
     tenant_id: str
@@ -282,10 +233,8 @@ API_ADMIN_KEY = os.getenv("API_ADMIN_KEY", "cambia_esto_en_produccion")
 async def crear_invitacion(inv: InvitacionRequest, admin_key: str = Header(...)):
     if admin_key != API_ADMIN_KEY:
         raise HTTPException(status_code=403, detail="No autorizado")
-
     token = str(uuid.uuid4())
     expiracion = datetime.now(timezone.utc) + timedelta(days=inv.dias_validez)
-
     conn = engine.raw_connection()
     cursor = conn.cursor()
     try:
@@ -301,8 +250,6 @@ async def crear_invitacion(inv: InvitacionRequest, admin_key: str = Header(...))
     finally:
         cursor.close()
         conn.close()
-
-    # Link del dashboard (ajusta la URL base)
     base_url = os.getenv("DASHBOARD_URL", "https://5mefjgvsuazhayejhm92vk.streamlit.app")
     link = f"{base_url}?invite={token}"
     return InvitacionResponse(token=token, link=link)
@@ -314,15 +261,12 @@ async def validate_invite(token: str):
     try:
         cursor.execute("""
             SELECT email, tenant_id, fecha_expiracion, usada
-            FROM invitaciones
-            WHERE token = %s
+            FROM invitaciones WHERE token = %s
         """, (token,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Token no encontrado")
         email, tenant_id, expiracion, usada = row
-        # ⚠️ Temporal: ignoramos usada y expiración
-        # Devolvemos los datos directamente
         return {"email": email, "tenant_id": tenant_id}
     except HTTPException:
         raise
@@ -332,32 +276,25 @@ async def validate_invite(token: str):
         cursor.close()
         conn.close()
 
-
-# Estos 3 endpoints manejan el sistema de afiliación Dudú
-# Sin tocar ningún endpoint existente.
 # ============================================
-
-from pydantic import BaseModel, validator
-from typing import Optional, List
-from datetime import datetime
-
-# ── Modelos de datos ──────────────────────────────────────
+# ENDPOINTS AFILIACIÓN DUDÚ
+# ============================================
 class AfiliadoIn(BaseModel):
-    nombre_completo: str
-    telefono:        str
-    edad:            Optional[int] = None
-    genero:          Optional[str] = None
-    municipio:       str
-    colonia:         Optional[str] = None
-    seccion_electoral: Optional[int] = None
-    tipo_participacion: Optional[str] = "Simpatizante"
-    temas_interes:   Optional[List[str]] = []
-    como_se_entero:  Optional[str] = None
-    acepta_aviso:    bool
-    acepta_contacto: bool
+    nombre_completo:    str
+    telefono:           str
+    edad:               Optional[int]       = None
+    genero:             Optional[str]       = None
+    municipio:          str
+    colonia:            Optional[str]       = None
+    seccion_electoral:  Optional[int]       = None
+    tipo_participacion: Optional[str]       = "Simpatizante"
+    temas_interes:      Optional[List[str]] = []
+    como_se_entero:     Optional[str]       = None
+    acepta_aviso:       bool
+    acepta_contacto:    bool
 
     @validator('nombre_completo')
-    def nombre_no_vacio(cls, v):
+    def nombre_valido(cls, v):
         if not v or len(v.strip()) < 3:
             raise ValueError('Nombre muy corto')
         return v.strip()
@@ -366,179 +303,132 @@ class AfiliadoIn(BaseModel):
     def telefono_valido(cls, v):
         digits = ''.join(filter(str.isdigit, v))
         if len(digits) < 10:
-            raise ValueError('Teléfono inválido')
+            raise ValueError('Teléfono inválido, mínimo 10 dígitos')
         return v.strip()
 
     @validator('acepta_aviso')
-    def debe_aceptar_aviso(cls, v):
+    def debe_aceptar(cls, v):
         if not v:
             raise ValueError('Debe aceptar el aviso de privacidad')
         return v
 
-    @validator('municipio')
-    def municipio_valido(cls, v):
-        permitidos = ['Taxco de Alarcón', 'Pilcaya', 'Tetipac', 'Taxco', 'Otro']
-        if v not in permitidos:
-            raise ValueError(f'Municipio no válido: {v}')
-        return v
 
-
-# ── Endpoint 1: Registrar afiliado ────────────────────────
 @app.post("/api/afiliados")
-async def registrar_afiliado(
-    afiliado: AfiliadoIn,
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    """
-    Recibe registro desde landing de Dudú.
-    Rate limiting implícito via Render.
-    Aguanta 10,000 usuarios concurrentes.
-    """
+async def registrar_afiliado(afiliado: AfiliadoIn, request: Request):
+    conn = engine.raw_connection()
+    cursor = conn.cursor()
     try:
-        # Prevenir duplicados por teléfono (mismo municipio)
-        existe = db.execute(text("""
-            SELECT pk_afiliado FROM afiliados_dudu
-            WHERE telefono = :tel AND municipio = :mun
-            LIMIT 1
-        """), {"tel": afiliado.telefono, "mun": afiliado.municipio}).fetchone()
+        cursor.execute(
+            "SELECT pk_afiliado FROM afiliados_dudu WHERE telefono = %s AND municipio = %s LIMIT 1",
+            (afiliado.telefono, afiliado.municipio)
+        )
+        if cursor.fetchone():
+            return {"ok": False, "mensaje": "Este número ya está registrado en tu municipio.", "duplicado": True}
 
-        if existe:
-            return {
-                "ok": False,
-                "mensaje": "Este número ya está registrado en tu municipio.",
-                "duplicado": True
-            }
-
-        # IP del cliente para auditoría
         ip_cliente = request.client.host if request.client else "0.0.0.0"
 
-        # Insertar registro
-        db.execute(text("""
+        cursor.execute("""
             INSERT INTO afiliados_dudu (
                 nombre_completo, telefono, edad, genero,
                 municipio, colonia, seccion_electoral,
                 tipo_participacion, temas_interes, como_se_entero,
                 acepta_aviso, acepta_contacto, ip_registro
-            ) VALUES (
-                :nombre, :tel, :edad, :genero,
-                :municipio, :colonia, :seccion,
-                :tipo, :temas, :como,
-                :aviso, :contacto, :ip
-            )
-        """), {
-            "nombre":   afiliado.nombre_completo,
-            "tel":      afiliado.telefono,
-            "edad":     afiliado.edad,
-            "genero":   afiliado.genero,
-            "municipio": afiliado.municipio,
-            "colonia":  afiliado.colonia,
-            "seccion":  afiliado.seccion_electoral,
-            "tipo":     afiliado.tipo_participacion,
-            "temas":    afiliado.temas_interes,
-            "como":     afiliado.como_se_entero,
-            "aviso":    afiliado.acepta_aviso,
-            "contacto": afiliado.acepta_contacto,
-            "ip":       ip_cliente,
-        })
-        db.commit()
-
-        return {
-            "ok": True,
-            "mensaje": "¡Gracias! Tu registro fue recibido correctamente.",
-        }
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            afiliado.nombre_completo, afiliado.telefono,
+            afiliado.edad, afiliado.genero,
+            afiliado.municipio, afiliado.colonia,
+            afiliado.seccion_electoral, afiliado.tipo_participacion,
+            afiliado.temas_interes, afiliado.como_se_entero,
+            afiliado.acepta_aviso, afiliado.acepta_contacto,
+            ip_cliente
+        ))
+        conn.commit()
+        return {"ok": True, "mensaje": "¡Gracias! Tu registro fue recibido correctamente."}
 
     except Exception as e:
-        db.rollback()
+        conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
 
 
-# ── Endpoint 2: KPIs para dashboard ──────────────────────
 @app.get("/api/afiliados/kpis")
-async def kpis_afiliados(db: Session = Depends(get_db)):
-    """KPIs en tiempo real para el dashboard interno."""
+async def kpis_afiliados():
+    conn = engine.raw_connection()
+    cursor = conn.cursor()
     try:
-        resultado = db.execute(text("""
+        cursor.execute("""
             SELECT
-                COUNT(*)                                          AS total,
-                COUNT(CASE WHEN genero = 'Mujer'  THEN 1 END)   AS mujeres,
-                COUNT(CASE WHEN genero = 'Hombre' THEN 1 END)   AS hombres,
-                COUNT(CASE WHEN municipio = 'Taxco de Alarcón'  THEN 1 END) AS taxco,
-                COUNT(CASE WHEN municipio = 'Pilcaya'           THEN 1 END) AS pilcaya,
-                COUNT(CASE WHEN municipio = 'Tetipac'           THEN 1 END) AS tetipac,
-                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '24 hours' THEN 1 END) AS ultimas_24h,
-                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '7 days'  THEN 1 END) AS ultima_semana
+                COUNT(*)                                                            AS total,
+                COUNT(CASE WHEN genero = 'Mujer'           THEN 1 END)             AS mujeres,
+                COUNT(CASE WHEN genero = 'Hombre'          THEN 1 END)             AS hombres,
+                COUNT(CASE WHEN municipio = 'Taxco de Alarcón' THEN 1 END)         AS taxco,
+                COUNT(CASE WHEN municipio = 'Pilcaya'      THEN 1 END)             AS pilcaya,
+                COUNT(CASE WHEN municipio = 'Tetipac'      THEN 1 END)             AS tetipac,
+                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '24 hours'
+                           THEN 1 END)                                              AS ultimas_24h,
+                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '7 days'
+                           THEN 1 END)                                              AS ultima_semana
             FROM afiliados_dudu
             WHERE activo = TRUE
-        """)).fetchone()
-
+        """)
+        r = cursor.fetchone()
         return {
-            "total":         resultado[0],
-            "mujeres":       resultado[1],
-            "hombres":       resultado[2],
-            "taxco":         resultado[3],
-            "pilcaya":       resultado[4],
-            "tetipac":       resultado[5],
-            "ultimas_24h":   resultado[6],
-            "ultima_semana": resultado[7],
+            "total": r[0], "mujeres": r[1], "hombres": r[2],
+            "taxco": r[3], "pilcaya": r[4], "tetipac": r[5],
+            "ultimas_24h": r[6], "ultima_semana": r[7]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
 
 
-# ── Endpoint 3: Exportar Excel ────────────────────────────
 @app.get("/api/afiliados/exportar")
-async def exportar_afiliados(
-    admin_key: str = Header(None, alias="admin-key"),
-    db: Session = Depends(get_db)
-):
-    """
-    Exporta todos los afiliados a Excel.
-    Requiere admin-key para proteger datos personales.
-    """
+async def exportar_afiliados(request: Request):
+    admin_key = request.headers.get("admin-key", "")
     if admin_key != os.getenv("API_ADMIN_KEY", ""):
         raise HTTPException(status_code=403, detail="No autorizado")
 
+    conn = engine.raw_connection()
+    cursor = conn.cursor()
     try:
-        import io
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-
-        rows = db.execute(text("""
+        cursor.execute("""
             SELECT nombre_completo, telefono, edad, genero,
                    municipio, colonia, seccion_electoral,
                    tipo_participacion, como_se_entero,
-                   fecha_registro::date as fecha
+                   DATE(fecha_registro) as fecha
             FROM afiliados_dudu
             WHERE activo = TRUE
             ORDER BY fecha_registro DESC
-        """)).fetchall()
+        """)
+        rows = cursor.fetchall()
 
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Afiliados Dudú"
 
-        # Encabezados con estilo
         headers = ["Nombre", "Teléfono", "Edad", "Género",
-                   "Municipio", "Colonia", "Sección", "Tipo",
-                   "Cómo se enteró", "Fecha registro"]
+                   "Municipio", "Colonia", "Sección",
+                   "Tipo", "Cómo se enteró", "Fecha"]
 
         verde = PatternFill("solid", fgColor="2E7D32")
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
             cell.font = Font(bold=True, color="FFFFFF")
             cell.fill = verde
             cell.alignment = Alignment(horizontal="center")
-            ws.column_dimensions[chr(64 + col)].width = 18
+            ws.column_dimensions[chr(64 + col)].width = 20
 
-        # Datos
-        for row_num, row in enumerate(rows, 2):
-            for col_num, value in enumerate(row, 1):
-                ws.cell(row=row_num, column=col_num, value=str(value) if value else "")
+        for r_num, row in enumerate(rows, 2):
+            for c_num, val in enumerate(row, 1):
+                ws.cell(row=r_num, column=c_num, value=str(val) if val else "")
 
-        # Fila de totales
         ws.append([])
-        ws.append([f"Total registros: {len(rows)}", "", "", "",
+        ws.append([f"Total: {len(rows)} registros", "", "", "",
                    "", "", "", "", "",
                    f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"])
 
@@ -546,7 +436,6 @@ async def exportar_afiliados(
         wb.save(output)
         output.seek(0)
 
-        from fastapi.responses import StreamingResponse
         return StreamingResponse(
             output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -554,7 +443,14 @@ async def exportar_afiliados(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
 
-  if __name__ == "__main__":
+
+# ============================================
+# ARRANQUE
+# ============================================
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
