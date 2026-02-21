@@ -336,10 +336,6 @@ async def validate_invite(token: str):
         
 <<<<<<< HEAD
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
-    
 # ============================================
 # PASO 2 — Pegar al FINAL de main.py
 # ANTES de la última línea: if __name__ == "__main__":
@@ -569,4 +565,10 @@ async def exportar_afiliados(
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
 >>>>>>> c0e6b59f5a7880c257092a53aa7675117f052c2d
+
