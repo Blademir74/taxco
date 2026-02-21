@@ -12,7 +12,12 @@ import sys
 from pathlib import Path
 import os
 import urllib.parse
-
+from modulos_nuevos import (
+    render_crm_brigadistas,
+    render_sentimiento_social,
+    render_contenido_7030,
+    render_blindaje_genero
+)
 # Configurar path
 DASHBOARD_PATH = Path(__file__).parent
 sys.path.insert(0, str(DASHBOARD_PATH))
@@ -560,7 +565,25 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🚨 Riesgo Electoral",
     "📥 Reportes y Exportación"
 ])
+# AGREGA DESPUÉS los tabs nuevos:
+tab_crm, tab_sent, tab_cont, tab_gen = st.tabs([
+    "👥 CRM Brigadistas",
+    "😤 Sentimiento",
+    "📅 Contenido 70/30",
+    "🛡️ Blindaje Género"
+])
 
+with tab_crm:
+    render_crm_brigadistas()
+
+with tab_sent:
+    render_sentimiento_social()
+
+with tab_cont:
+    render_contenido_7030()
+
+with tab_gen:
+    render_blindaje_genero()
 # ============================================
 # TAB 1: DASHBOARD ELECTORAL
 # ============================================
