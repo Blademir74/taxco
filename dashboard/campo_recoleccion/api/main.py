@@ -4,26 +4,19 @@ import pandas as pd
 from datetime import datetime, timezone, timedelta
 from database import engine
 from models import DiagnosticoTerritorio
-import base64
-import os
-import uvicorn
-import tempfile
+import base64, os, uvicorn, tempfile, uuid, logging, io
 from starlette.background import BackgroundTask
-from fastapi.responses import FileResponse
-import uuid
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, validator
 from fastapi import Header
 from typing import Optional, List
-import logging
-import io
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
-from fastapi.responses import StreamingResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="API de Recolección Territorial - Taxco")
+app = FastAPI(title="API Taxco")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,30 +26,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================
-# Health Check & Root
-# ============================================
 @app.get("/")
 def read_root():
-    return {"mensaje": "API de Recolección Territorial Activa", "doc": "/docs"}
+    return {"mensaje": "API Activa", "doc": "/docs"}
 
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-# ============================================
-# Endpoints públicos — App de campo
-# ============================================
-
 @app.get("/api/secciones")
 async def listar_secciones():
     query = """
-    SELECT 
-        s.seccion,
-        CASE 
+    SELECT s.seccion,
+        CASE
             WHEN r.pct_sin_agua > 10 THEN 'Zona con rezago de agua'
             WHEN r.pct_sin_servicios_basicos > 20 THEN 'Zona con rezago social'
-            ELSE 'Zona sin rezago crítico'
+            ELSE 'Zona sin rezago critico'
         END AS insight
     FROM seccion s
     LEFT JOIN vw_rezago_secciones r ON r.seccion = s.seccion
@@ -77,7 +62,7 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
         )
         result = cursor.fetchone()
         if not result:
-            raise HTTPException(status_code=404, detail="Sección no encontrada")
+            raise HTTPException(status_code=404, detail="Seccion no encontrada")
         pk_seccion = result[0]
 
         cursor.execute("SELECT id_fuente FROM fuente_sentimiento WHERE nombre_fuente = 'Encuesta de Campo'")
@@ -87,36 +72,23 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
             row_fuente = cursor.fetchone()
         id_fuente = row_fuente[0]
 
-        sentimientos = [
-            ("Agua", diagnostico.sentimiento.agua),
-            ("Basura", diagnostico.sentimiento.basura),
-            ("Seguridad", diagnostico.sentimiento.seguridad),
-        ]
-        for servicio, calif in sentimientos:
+        for servicio, calif in [("Agua", diagnostico.sentimiento.agua), ("Basura", diagnostico.sentimiento.basura), ("Seguridad", diagnostico.sentimiento.seguridad)]:
             cursor.execute("SELECT id_categoria FROM categoria_servicio WHERE nombre_categoria = %s", (servicio,))
             row_cat = cursor.fetchone()
             if not row_cat:
                 cursor.execute("INSERT INTO categoria_servicio (nombre_categoria) VALUES (%s) RETURNING id_categoria", (servicio,))
                 row_cat = cursor.fetchone()
-            id_categoria = row_cat[0]
-
             polaridad = 0.8 if calif >= 4 else (0.3 if calif >= 3 else -0.5)
+            cursor.execute(
+                "INSERT INTO sentimiento_social (pk_seccion, id_fuente, id_categoria, calificacion, sentimiento_polaridad, validado, fecha_registro) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                (pk_seccion, id_fuente, row_cat[0], calif, polaridad, True, diagnostico.fecha_recoleccion)
+            )
 
-            cursor.execute("""
-                INSERT INTO sentimiento_social 
-                (pk_seccion, id_fuente, id_categoria, calificacion, sentimiento_polaridad, validado, fecha_registro)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (pk_seccion, id_fuente, id_categoria, calif, polaridad, True, diagnostico.fecha_recoleccion))
-
-        cursor.execute("""
-            INSERT INTO simpatizantes (pk_seccion, nombre, contacto, es_mujer, notas, fecha_registro)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (pk_seccion,
-              diagnostico.simpatizante.nombre,
-              diagnostico.simpatizante.contacto,
-              diagnostico.simpatizante.es_mujer,
-              diagnostico.simpatizante.notas,
-              diagnostico.fecha_recoleccion))
+        cursor.execute(
+            "INSERT INTO simpatizantes (pk_seccion, nombre, contacto, es_mujer, notas, fecha_registro) VALUES (%s,%s,%s,%s,%s,%s)",
+            (pk_seccion, diagnostico.simpatizante.nombre, diagnostico.simpatizante.contacto,
+             diagnostico.simpatizante.es_mujer, diagnostico.simpatizante.notas, diagnostico.fecha_recoleccion)
+        )
 
         if diagnostico.evidencia and diagnostico.evidencia.foto_base64:
             base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -129,34 +101,30 @@ async def guardar_diagnostico(diagnostico: DiagnosticoTerritorio):
                 foto_data = foto_data.split(',')[1]
             with open(filepath, "wb") as f:
                 f.write(base64.b64decode(foto_data))
-            cursor.execute("""
-                INSERT INTO evidencias (pk_seccion, ruta_archivo, comentario, fecha_registro)
-                VALUES (%s, %s, %s, %s)
-            """, (pk_seccion, filepath, diagnostico.evidencia.comentario, diagnostico.fecha_recoleccion))
+            cursor.execute(
+                "INSERT INTO evidencias (pk_seccion, ruta_archivo, comentario, fecha_registro) VALUES (%s,%s,%s,%s)",
+                (pk_seccion, filepath, diagnostico.evidencia.comentario, diagnostico.fecha_recoleccion)
+            )
 
         if diagnostico.latitud is not None and diagnostico.longitud is not None:
-            cursor.execute("""
-                INSERT INTO logs_gps (pk_seccion, latitud, longitud, fecha_registro)
-                VALUES (%s, %s, %s, %s)
-            """, (pk_seccion, diagnostico.latitud, diagnostico.longitud, diagnostico.fecha_recoleccion))
+            cursor.execute(
+                "INSERT INTO logs_gps (pk_seccion, latitud, longitud, fecha_registro) VALUES (%s,%s,%s,%s)",
+                (pk_seccion, diagnostico.latitud, diagnostico.longitud, diagnostico.fecha_recoleccion)
+            )
 
         conn.commit()
-        return {"mensaje": "Diagnóstico guardado correctamente"}
-
+        return {"mensaje": "Diagnostico guardado correctamente"}
     except HTTPException:
         conn.rollback()
         raise
     except Exception as e:
         conn.rollback()
         logger.exception("Error en guardar_diagnostico")
-        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
 
-# ============================================
-# Exportar Excel campo
-# ============================================
 @app.get("/api/exportar-excel")
 async def exportar_excel():
     conn = engine.raw_connection()
@@ -164,60 +132,25 @@ async def exportar_excel():
     output_path = tmp.name
     tmp.close()
     try:
-        df_sentimiento = pd.read_sql("""
-            SELECT s.seccion, cs.nombre_categoria as servicio,
-                   ss.calificacion, ss.sentimiento_polaridad, ss.fecha_registro
-            FROM sentimiento_social ss
-            JOIN seccion s ON ss.pk_seccion = s.pk_seccion
-            JOIN categoria_servicio cs ON ss.id_categoria = cs.id_categoria
-            ORDER BY ss.fecha_registro DESC
-        """, conn)
-
-        df_simpatizantes = pd.read_sql("""
-            SELECT s.seccion, sim.nombre, sim.contacto,
-                   sim.es_mujer, sim.notas, sim.fecha_registro
-            FROM simpatizantes sim
-            JOIN seccion s ON sim.pk_seccion = s.pk_seccion
-            ORDER BY sim.fecha_registro DESC
-        """, conn)
-
-        df_evidencias = pd.read_sql("""
-            SELECT s.seccion, e.ruta_archivo, e.comentario, e.fecha_registro
-            FROM evidencias e
-            JOIN seccion s ON e.pk_seccion = s.pk_seccion
-            ORDER BY e.fecha_registro DESC
-        """, conn)
-
-        df_gps = pd.read_sql("""
-            SELECT s.seccion, g.latitud, g.longitud, g.fecha_registro
-            FROM logs_gps g
-            JOIN seccion s ON g.pk_seccion = s.pk_seccion
-            ORDER BY g.fecha_registro DESC
-        """, conn)
-
+        df_sent = pd.read_sql("SELECT s.seccion, cs.nombre_categoria, ss.calificacion, ss.sentimiento_polaridad, ss.fecha_registro FROM sentimiento_social ss JOIN seccion s ON ss.pk_seccion=s.pk_seccion JOIN categoria_servicio cs ON ss.id_categoria=cs.id_categoria ORDER BY ss.fecha_registro DESC", conn)
+        df_simp = pd.read_sql("SELECT s.seccion, sim.nombre, sim.contacto, sim.es_mujer, sim.notas, sim.fecha_registro FROM simpatizantes sim JOIN seccion s ON sim.pk_seccion=s.pk_seccion ORDER BY sim.fecha_registro DESC", conn)
+        df_evid = pd.read_sql("SELECT s.seccion, e.ruta_archivo, e.comentario, e.fecha_registro FROM evidencias e JOIN seccion s ON e.pk_seccion=s.pk_seccion ORDER BY e.fecha_registro DESC", conn)
+        df_gps  = pd.read_sql("SELECT s.seccion, g.latitud, g.longitud, g.fecha_registro FROM logs_gps g JOIN seccion s ON g.pk_seccion=s.pk_seccion ORDER BY g.fecha_registro DESC", conn)
         with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-            df_sentimiento.to_excel(writer, sheet_name="Sentimiento Social", index=False)
-            df_simpatizantes.to_excel(writer, sheet_name="Simpatizantes", index=False)
-            df_evidencias.to_excel(writer, sheet_name="Evidencias", index=False)
+            df_sent.to_excel(writer, sheet_name="Sentimiento", index=False)
+            df_simp.to_excel(writer, sheet_name="Simpatizantes", index=False)
+            df_evid.to_excel(writer, sheet_name="Evidencias", index=False)
             df_gps.to_excel(writer, sheet_name="GPS", index=False)
-
-        return FileResponse(
-            path=output_path,
-            filename="diagnosticos_campo.xlsx",
+        return FileResponse(path=output_path, filename="diagnosticos_campo.xlsx",
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            background=BackgroundTask(lambda: os.unlink(output_path))
-        )
+            background=BackgroundTask(lambda: os.unlink(output_path)))
     except Exception as e:
         if os.path.exists(output_path):
             os.unlink(output_path)
-        logger.exception("Error en exportar_excel")
-        raise HTTPException(status_code=500, detail=f"Error al generar Excel: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
 
-# ============================================
-# Endpoints de invitaciones
-# ============================================
 class InvitacionRequest(BaseModel):
     email: EmailStr
     tenant_id: str
@@ -238,36 +171,28 @@ async def crear_invitacion(inv: InvitacionRequest, admin_key: str = Header(...))
     conn = engine.raw_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
-            INSERT INTO invitaciones (token, email, tenant_id, fecha_expiracion)
-            VALUES (%s, %s, %s, %s)
-        """, (token, inv.email, inv.tenant_id, expiracion))
+        cursor.execute("INSERT INTO invitaciones (token, email, tenant_id, fecha_expiracion) VALUES (%s,%s,%s,%s)",
+                       (token, inv.email, inv.tenant_id, expiracion))
         conn.commit()
     except Exception as e:
         conn.rollback()
-        logger.exception("Error creando invitación")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
     base_url = os.getenv("DASHBOARD_URL", "https://5mefjgvsuazhayejhm92vk.streamlit.app")
-    link = f"{base_url}?invite={token}"
-    return InvitacionResponse(token=token, link=link)
+    return InvitacionResponse(token=token, link=f"{base_url}?invite={token}")
 
 @app.get("/api/validate-invite/{token}")
 async def validate_invite(token: str):
     conn = engine.raw_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
-            SELECT email, tenant_id, fecha_expiracion, usada
-            FROM invitaciones WHERE token = %s
-        """, (token,))
+        cursor.execute("SELECT email, tenant_id FROM invitaciones WHERE token = %s", (token,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Token no encontrado")
-        email, tenant_id, expiracion, usada = row
-        return {"email": email, "tenant_id": tenant_id}
+        return {"email": row[0], "tenant_id": row[1]}
     except HTTPException:
         raise
     except Exception as e:
@@ -276,9 +201,6 @@ async def validate_invite(token: str):
         cursor.close()
         conn.close()
 
-# ============================================
-# ENDPOINTS AFILIACIÓN DUDÚ
-# ============================================
 class AfiliadoIn(BaseModel):
     nombre_completo:    str
     telefono:           str
@@ -303,56 +225,43 @@ class AfiliadoIn(BaseModel):
     def telefono_valido(cls, v):
         digits = ''.join(filter(str.isdigit, v))
         if len(digits) < 10:
-            raise ValueError('Teléfono inválido, mínimo 10 dígitos')
+            raise ValueError('Telefono invalido')
         return v.strip()
 
     @validator('acepta_aviso')
     def debe_aceptar(cls, v):
         if not v:
-            raise ValueError('Debe aceptar el aviso de privacidad')
+            raise ValueError('Debe aceptar aviso de privacidad')
         return v
-
 
 @app.post("/api/afiliados")
 async def registrar_afiliado(afiliado: AfiliadoIn, request: Request):
     conn = engine.raw_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(
-            "SELECT pk_afiliado FROM afiliados_dudu WHERE telefono = %s AND municipio = %s LIMIT 1",
-            (afiliado.telefono, afiliado.municipio)
-        )
+        cursor.execute("SELECT pk_afiliado FROM afiliados_dudu WHERE telefono = %s AND municipio = %s LIMIT 1",
+                       (afiliado.telefono, afiliado.municipio))
         if cursor.fetchone():
-            return {"ok": False, "mensaje": "Este número ya está registrado en tu municipio.", "duplicado": True}
-
+            return {"ok": False, "mensaje": "Este numero ya esta registrado en tu municipio.", "duplicado": True}
         ip_cliente = request.client.host if request.client else "0.0.0.0"
-
         cursor.execute("""
-            INSERT INTO afiliados_dudu (
-                nombre_completo, telefono, edad, genero,
-                municipio, colonia, seccion_electoral,
-                tipo_participacion, temas_interes, como_se_entero,
-                acepta_aviso, acepta_contacto, ip_registro
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            afiliado.nombre_completo, afiliado.telefono,
-            afiliado.edad, afiliado.genero,
-            afiliado.municipio, afiliado.colonia,
-            afiliado.seccion_electoral, afiliado.tipo_participacion,
-            afiliado.temas_interes, afiliado.como_se_entero,
-            afiliado.acepta_aviso, afiliado.acepta_contacto,
-            ip_cliente
-        ))
+            INSERT INTO afiliados_dudu
+                (nombre_completo, telefono, edad, genero, municipio, colonia,
+                 seccion_electoral, tipo_participacion, temas_interes, como_se_entero,
+                 acepta_aviso, acepta_contacto, ip_registro)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (afiliado.nombre_completo, afiliado.telefono, afiliado.edad, afiliado.genero,
+              afiliado.municipio, afiliado.colonia, afiliado.seccion_electoral,
+              afiliado.tipo_participacion, afiliado.temas_interes, afiliado.como_se_entero,
+              afiliado.acepta_aviso, afiliado.acepta_contacto, ip_cliente))
         conn.commit()
-        return {"ok": True, "mensaje": "¡Gracias! Tu registro fue recibido correctamente."}
-
+        return {"ok": True, "mensaje": "Gracias! Tu registro fue recibido correctamente."}
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
-
 
 @app.get("/api/afiliados/kpis")
 async def kpis_afiliados():
@@ -361,96 +270,68 @@ async def kpis_afiliados():
     try:
         cursor.execute("""
             SELECT
-                COUNT(*)                                                            AS total,
-                COUNT(CASE WHEN genero = 'Mujer'           THEN 1 END)             AS mujeres,
-                COUNT(CASE WHEN genero = 'Hombre'          THEN 1 END)             AS hombres,
-                COUNT(CASE WHEN municipio = 'Taxco de Alarcón' THEN 1 END)         AS taxco,
-                COUNT(CASE WHEN municipio = 'Pilcaya'      THEN 1 END)             AS pilcaya,
-                COUNT(CASE WHEN municipio = 'Tetipac'      THEN 1 END)             AS tetipac,
-                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '24 hours'
-                           THEN 1 END)                                              AS ultimas_24h,
-                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '7 days'
-                           THEN 1 END)                                              AS ultima_semana
-            FROM afiliados_dudu
-            WHERE activo = TRUE
+                COUNT(*) AS total,
+                COUNT(CASE WHEN genero = 'Mujer'  THEN 1 END) AS mujeres,
+                COUNT(CASE WHEN genero = 'Hombre' THEN 1 END) AS hombres,
+                COUNT(CASE WHEN municipio = 'Taxco de Alarcon' THEN 1 END) AS taxco,
+                COUNT(CASE WHEN municipio = 'Pilcaya'  THEN 1 END) AS pilcaya,
+                COUNT(CASE WHEN municipio = 'Tetipac'  THEN 1 END) AS tetipac,
+                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '24 hours' THEN 1 END) AS ultimas_24h,
+                COUNT(CASE WHEN fecha_registro >= NOW() - INTERVAL '7 days'  THEN 1 END) AS ultima_semana
+            FROM afiliados_dudu WHERE activo = TRUE
         """)
         r = cursor.fetchone()
-        return {
-            "total": r[0], "mujeres": r[1], "hombres": r[2],
-            "taxco": r[3], "pilcaya": r[4], "tetipac": r[5],
-            "ultimas_24h": r[6], "ultima_semana": r[7]
-        }
+        return {"total": r[0], "mujeres": r[1], "hombres": r[2],
+                "taxco": r[3], "pilcaya": r[4], "tetipac": r[5],
+                "ultimas_24h": r[6], "ultima_semana": r[7]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
 
-
 @app.get("/api/afiliados/exportar")
 async def exportar_afiliados(request: Request):
-    admin_key = request.headers.get("admin-key", "")
-    if admin_key != os.getenv("API_ADMIN_KEY", ""):
+    if request.headers.get("admin-key", "") != os.getenv("API_ADMIN_KEY", ""):
         raise HTTPException(status_code=403, detail="No autorizado")
-
     conn = engine.raw_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            SELECT nombre_completo, telefono, edad, genero,
-                   municipio, colonia, seccion_electoral,
-                   tipo_participacion, como_se_entero,
-                   DATE(fecha_registro) as fecha
-            FROM afiliados_dudu
-            WHERE activo = TRUE
-            ORDER BY fecha_registro DESC
+            SELECT nombre_completo, telefono, edad, genero, municipio, colonia,
+                   seccion_electoral, tipo_participacion, como_se_entero, DATE(fecha_registro)
+            FROM afiliados_dudu WHERE activo = TRUE ORDER BY fecha_registro DESC
         """)
         rows = cursor.fetchall()
-
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = "Afiliados Dudú"
-
-        headers = ["Nombre", "Teléfono", "Edad", "Género",
-                   "Municipio", "Colonia", "Sección",
-                   "Tipo", "Cómo se enteró", "Fecha"]
-
+        ws.title = "Afiliados Dudu"
+        headers = ["Nombre","Telefono","Edad","Genero","Municipio","Colonia","Seccion","Tipo","Como se entero","Fecha"]
         verde = PatternFill("solid", fgColor="2E7D32")
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
             cell.font = Font(bold=True, color="FFFFFF")
             cell.fill = verde
             cell.alignment = Alignment(horizontal="center")
-            ws.column_dimensions[chr(64 + col)].width = 20
-
+            ws.column_dimensions[chr(64+col)].width = 20
         for r_num, row in enumerate(rows, 2):
             for c_num, val in enumerate(row, 1):
                 ws.cell(row=r_num, column=c_num, value=str(val) if val else "")
-
         ws.append([])
-        ws.append([f"Total: {len(rows)} registros", "", "", "",
-                   "", "", "", "", "",
+        ws.append([f"Total: {len(rows)} registros", "", "", "", "", "", "", "", "",
                    f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"])
-
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
-
-        return StreamingResponse(
-            output,
+        return StreamingResponse(output,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": "attachment; filename=afiliados_dudu.xlsx"}
-        )
+            headers={"Content-Disposition": "attachment; filename=afiliados_dudu.xlsx"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
 
-
-# ============================================
-# ARRANQUE
-# ============================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
