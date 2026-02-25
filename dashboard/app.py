@@ -12,20 +12,21 @@ import sys
 from pathlib import Path
 import os
 import urllib.parse
-from modulos_nuevos import (
-    render_crm_brigadistas,
-    render_sentimiento_social,
-    render_contenido_7030,
-    render_blindaje_genero
-)
+
 # Configurar path
 DASHBOARD_PATH = Path(__file__).parent
 sys.path.insert(0, str(DASHBOARD_PATH))
 
 # Imports locales
 try:
-    from config import *
-    from queries import *
+       from config import *
+       from queries import *
+       from modulos_nuevos import (
+           render_crm_brigadistas,
+           render_sentimiento_social,
+           render_contenido_7030,
+           render_blindaje_genero,
+       )
 except ImportError as e:
     st.error(f"Error al importar módulos: {e}")
     st.stop()
@@ -558,32 +559,18 @@ with st.sidebar:
 # ============================================
 # TABS PRINCIPALES
 # ============================================
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 Dashboard Electoral", 
-    "💰 Prioridades de Inversión 2025",
-    "👥 Análisis de Género",
-    "🚨 Riesgo Electoral",
-    "📥 Reportes y Exportación"
-])
-# AGREGA DESPUÉS los tabs nuevos:
-tab_crm, tab_sent, tab_cont, tab_gen = st.tabs([
-    "👥 CRM Brigadistas",
-    "😤 Sentimiento",
-    "📅 Contenido 70/30",
-    "🛡️ Blindaje Género"
-])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+        "📊 Dashboard Electoral",
+        "💰 Prioridades de Inversión 2025",
+        "👥 Análisis de Género",
+        "🚨 Riesgo E ectoral",
+        "📥 Reportes y Exportación",
+        "👥 CRM Brigadistas",
+        "😤 Sentimiento Social",
+        "📅 Contenido 70/30",
+        "🛡️ Blindaje de Género",
+    ])
 
-with tab_crm:
-    render_crm_brigadistas()
-
-with tab_sent:
-    render_sentimiento_social()
-
-with tab_cont:
-    render_contenido_7030()
-
-with tab_gen:
-    render_blindaje_genero()
 # ============================================
 # TAB 1: DASHBOARD ELECTORAL
 # ============================================
@@ -1295,4 +1282,15 @@ with tab5:
 # ============================================
 # FOOTER (sin línea divisoria)
 # ============================================
+    with tab6:
+       render_crm_brigadistas()
+
+    with tab7:
+       render_sentimiento_social()
+
+    with tab8:
+       render_contenido_7030()
+
+    with tab9:
+       render_blindaje_genero()
 st.caption("Dashboard Electoral Taxco 2024 | PostgreSQL + PostGIS | Datos: INE, INEGI, IEPAC")
