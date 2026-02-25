@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obdulia "Dudú" Naranjo Cabrera — Distrito XXI Guerrero</title>
+<meta name="description" content="Participación ciudadana, agenda social y actividades comunitarias en Taxco, Pilcaya y Tetipac. Distrito XXI Guerrero.">
+<meta name="robots" content="index, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --verde: #1a4a2e;
+  --verde-medio: #2d6e47;
+  --verde-claro: #4a9e6b;
+  --dorado: #c8a951;
+  --dorado-claro: #e8c97a;
+  --crema: #f8f4ee;
+  --blanco: #ffffff;
+  --gris: #6b7280;
+  --gris-claro: #f1f0ed;
+  --texto: #1a1a1a;
+  --radio: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--texto);
+  background: var(--crema);
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(26,74,46,0.97);
+  backdrop-filter: blur(12px);
+  padding: 16px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(200,169,81,0.3);
+}
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  color: var(--dorado);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.nav-logo span { color: rgba(255,255,255,0.7); font-weight: 300; }
+.nav-links { display: flex; gap: 32px; list-style: none; }
+.nav-links a {
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--dorado); }
+.nav-cta {
+  background: var(--dorado);
+  color: var(--verde) !important;
+  padding: 8px 20px;
+  border-radius: 50px;
+  font-weight: 600 !important;
+}
+.nav-cta:hover { background: var(--dorado-claro) !important; color: var(--verde) !important; }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 70% 50%, rgba(74,158,107,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(200,169,81,0.08) 0%, transparent 50%),
+    linear-gradient(160deg, #0d2b1a 0%, #1a4a2e 40%, #1e3a28 100%);
+  display: flex; align-items: center;
+  padding: 120px 40px 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(200,169,81,0.12) 1px, transparent 0);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.hero-content {
+  max-width: 1200px; margin: 0 auto; width: 100%;
+  display: grid; grid-template-columns: 1fr 420px; gap: 80px; align-items: center;
+}
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(200,169,81,0.15);
+  border: 1px solid rgba(200,169,81,0.4);
+  color: var(--dorado);
+  padding: 6px 16px; border-radius: 50px;
+  font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 28px;
+  animation: fadeUp 0.8s ease both;
+}
+
+.hero-tag::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--dorado);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 5vw, 4.2rem);
+  font-weight: 900;
+  color: var(--blanco);
+  line-height: 1.1;
+  margin-bottom: 12px;
+  animation: fadeUp 0.8s 0.1s ease both;
+}
+
+h1 em {
+  font-style: italic;
+  color: var(--dorado);
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 520px;
+  font-weight: 300;
+  animation: fadeUp 0.8s 0.2s ease both;
+}
+
+.hero-btns {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  animation: fadeUp 0.8s 0.3s ease both;
+}
+
+.btn-primary {
+  background: var(--dorado);
+  color: var(--verde);
+  padding: 14px 28px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.25s;
+  border: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary:hover {
+  background: var(--dorado-claro);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(200,169,81,0.35);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--blanco);
+  padding: 14px 28px;
+  border-radius: 50px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.3);
+  transition: all 0.25s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-outline:hover {
+  border-color: var(--dorado);
+  color: var(--dorado);
+  transform: translateY(-2px);
+}
+
+.hero-stats {
+  display: flex; gap: 32px; margin-top: 52px;
+  animation: fadeUp 0.8s 0.4s ease both;
+}
+.stat { }
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem; font-weight: 900;
+  color: var(--dorado);
+  display: block;
+}
+.stat-label {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* Tarjeta perfil hero */
+.hero-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(200,169,81,0.25);
+  border-radius: 24px;
+  padding: 40px 32px;
+  backdrop-filter: blur(20px);
+  animation: fadeLeft 0.9s 0.2s ease both;
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--dorado), var(--verde-claro), var(--dorado));
+}
+
+.profile-avatar {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--verde-medio), var(--dorado));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem; font-weight: 900;
+  color: white;
+  margin-bottom: 20px;
+  border: 3px solid rgba(200,169,81,0.4);
+}
+
+.profile-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem; font-weight: 700;
+  color: var(--blanco);
+  margin-bottom: 4px;
+}
+.profile-nick {
+  font-size: 1rem;
+  color: var(--dorado);
+  font-style: italic;
+  margin-bottom: 16px;
+}
+.profile-cargo {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.5;
+  padding: 12px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.profile-tags {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.ptag {
+  background: rgba(200,169,81,0.15);
+  border: 1px solid rgba(200,169,81,0.3);
+  color: var(--dorado-claro);
+  padding: 4px 12px; border-radius: 50px;
+  font-size: 0.75rem;
+}
+.counter-live {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(74,158,107,0.15);
+  border: 1px solid rgba(74,158,107,0.3);
+  border-radius: 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.counter-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem; font-weight: 900;
+  color: var(--verde-claro);
+  min-width: 60px;
+}
+.counter-label { font-size: 0.78rem; color: rgba(255,255,255,0.6); line-height: 1.4; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* SECCIONES GENERALES */
+section { padding: 96px 40px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.section-tag {
+  display: inline-block;
+  color: var(--verde-medio);
+  font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--dorado);
+}
+h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
+  font-weight: 900;
+  color: var(--verde);
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.lead {
+  font-size: 1.05rem;
+  color: var(--gris);
+  line-height: 1.7;
+  max-width: 600px;
+  font-weight: 300;
+}
+
+/* QUIÉN ES */
+.quien {
+  background: var(--blanco);
+}
+.quien-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: start;
+}
+.timeline {
+  margin-top: 40px;
+  position: relative;
+  padding-left: 24px;
+}
+.timeline::before {
+  content: '';
+  position: absolute; left: 0; top: 8px; bottom: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--dorado), var(--verde-claro));
+}
+.tl-item {
+  position: relative;
+  margin-bottom: 28px;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: all 0.5s ease;
+}
+.tl-item.visible { opacity: 1; transform: translateX(0); }
+.tl-item::before {
+  content: '';
+  position: absolute; left: -28px; top: 6px;
+  width: 10px; height: 10px;
+  background: var(--dorado);
+  border-radius: 50%;
+  border: 2px solid var(--blanco);
+  box-shadow: 0 0 0 2px var(--dorado);
+}
+.tl-year {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--dorado);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.tl-text {
+  font-size: 0.95rem;
+  color: var(--texto);
+  line-height: 1.5;
+}
+.quien-valores {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-top: 32px;
+}
+.valor-card {
+  padding: 24px 20px;
+  border-radius: var(--radio);
+  border: 1px solid #e5e7eb;
+  transition: all 0.25s;
+}
+.valor-card:hover {
+  border-color: var(--verde-claro);
+  box-shadow: 0 4px 20px rgba(26,74,46,0.08);
+  transform: translateY(-3px);
+}
+.valor-icon { font-size: 1.8rem; margin-bottom: 10px; }
+.valor-titulo { font-weight: 700; font-size: 0.9rem; color: var(--verde); margin-bottom: 4px; }
+.valor-desc { font-size: 0.8rem; color: var(--gris); line-height: 1.5; }
+
+/* EJES */
+.ejes { background: var(--gris-claro); }
+.ejes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 48px;
+}
+.eje-card {
+  background: var(--blanco);
+  border-radius: 20px;
+  padding: 36px 28px;
+  position: relative; overflow: hidden;
+  transition: all 0.3s;
+  opacity: 0; transform: translateY(30px);
+}
+.eje-card.visible { opacity: 1; transform: translateY(0); }
+.eje-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(26,74,46,0.12);
+}
+.eje-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+}
+.eje-card:nth-child(1)::before { background: linear-gradient(90deg, #2d6e47, #4a9e6b); }
+.eje-card:nth-child(2)::before { background: linear-gradient(90deg, #c8a951, #e8c97a); }
+.eje-card:nth-child(3)::before { background: linear-gradient(90deg, #1a4a2e, #2d6e47); }
+.eje-card:nth-child(4)::before { background: linear-gradient(90deg, #4a9e6b, #c8a951); }
+.eje-card:nth-child(5)::before { background: linear-gradient(90deg, #e8c97a, #c8a951); }
+.eje-emoji { font-size: 2.4rem; margin-bottom: 16px; display: block; }
+.eje-titulo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.15rem; font-weight: 700;
+  color: var(--verde); margin-bottom: 10px;
+}
+.eje-desc { font-size: 0.88rem; color: var(--gris); line-height: 1.65; }
+
+/* TERRITORIO */
+.territorio { background: var(--verde); position: relative; overflow: hidden; }
+.territorio::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(200,169,81,0.08) 1px, transparent 0);
+  background-size: 36px 36px;
+}
+.territorio h2 { color: var(--blanco); }
+.territorio .lead { color: rgba(255,255,255,0.65); }
+.territorio .section-tag { color: var(--dorado); }
+.municipios-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 24px; margin-top: 48px;
+}
+.muni-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(200,169,81,0.25);
+  border-radius: 20px;
+  padding: 36px 28px;
+  transition: all 0.3s;
+}
+.muni-card:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(200,169,81,0.5);
+  transform: translateY(-4px);
+}
+.muni-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem; font-weight: 900;
+  color: var(--dorado);
+  display: block; margin-bottom: 4px;
+}
+.muni-nombre {
+  font-size: 1.1rem; font-weight: 700;
+  color: var(--blanco); margin-bottom: 12px;
+}
+.muni-desc { font-size: 0.85rem; color: rgba(255,255,255,0.55); line-height: 1.6; }
+.muni-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.muni-tag {
+  background: rgba(200,169,81,0.15);
+  border: 1px solid rgba(200,169,81,0.3);
+  color: var(--dorado-claro);
+  padding: 3px 10px; border-radius: 50px;
+  font-size: 0.72rem;
+}
+
+/* FORMULARIO PARTICIPA */
+.participa { background: var(--crema); }
+.form-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: start; margin-top: 48px;
+}
+.form-info h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem; font-weight: 700;
+  color: var(--verde); margin-bottom: 16px;
+}
+.form-info p { font-size: 0.95rem; color: var(--gris); line-height: 1.7; margin-bottom: 20px; }
+.form-beneficios { list-style: none; }
+.form-beneficios li {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 14px;
+  font-size: 0.9rem; color: var(--texto);
+}
+.form-beneficios li::before {
+  content: '✓';
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; min-width: 22px;
+  background: var(--verde);
+  color: white; border-radius: 50%;
+  font-size: 0.7rem; font-weight: 700;
+  margin-top: 1px;
+}
+
+.form-box {
+  background: var(--blanco);
+  border-radius: 24px;
+  padding: 40px 36px;
+  box-shadow: 0 4px 40px rgba(26,74,46,0.08);
+  border: 1px solid #e5e7eb;
+}
+.form-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--verde); margin-bottom: 6px;
+}
+.form-subtitle { font-size: 0.85rem; color: var(--gris); margin-bottom: 28px; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.field { margin-bottom: 18px; }
+.field label {
+  display: block;
+  font-size: 0.82rem; font-weight: 600;
+  color: var(--verde); margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+.field label span { color: #e63946; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--texto);
+  background: var(--crema);
+  transition: all 0.2s;
+  outline: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--verde-medio);
+  background: var(--blanco);
+  box-shadow: 0 0 0 3px rgba(45,110,71,0.12);
+}
+.field input.error { border-color: #e63946; }
+.field .error-msg {
+  color: #e63946; font-size: 0.75rem; margin-top: 4px; display: none;
+}
+.field input.error + .error-msg { display: block; }
+
+.intereses-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+}
+.interes-btn {
+  padding: 8px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: var(--crema);
+  font-size: 0.8rem; font-weight: 500;
+  color: var(--gris);
+  cursor: pointer; transition: all 0.2s;
+  text-align: left;
+}
+.interes-btn.active {
+  border-color: var(--verde-medio);
+  background: rgba(45,110,71,0.08);
+  color: var(--verde);
+}
+
+.checkbox-field {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 14px;
+}
+.checkbox-field input[type="checkbox"] {
+  width: 18px; height: 18px; min-width: 18px;
+  accent-color: var(--verde); margin-top: 2px;
+}
+.checkbox-field label {
+  font-size: 0.8rem; color: var(--gris); line-height: 1.5; cursor: pointer;
+}
+.checkbox-field label a { color: var(--verde); }
+
+.btn-submit {
+  width: 100%;
+  background: var(--verde);
+  color: var(--blanco);
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 1rem; font-weight: 700;
+  border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.25s;
+  margin-top: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-submit:hover {
+  background: var(--verde-medio);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(26,74,46,0.25);
+}
+.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.success-box {
+  text-align: center; padding: 40px 20px; display: none;
+}
+.success-icon { font-size: 3rem; margin-bottom: 16px; }
+.success-box h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem; color: var(--verde); margin-bottom: 10px;
+}
+.success-box p { font-size: 0.9rem; color: var(--gris); line-height: 1.6; }
+
+/* AFILIACIÓN */
+.afiliacion { background: var(--blanco); }
+.afiliacion-box {
+  max-width: 720px; margin: 48px auto 0;
+  border: 2px solid var(--verde);
+  border-radius: 24px;
+  overflow: hidden;
+}
+.afil-header {
+  background: var(--verde);
+  padding: 28px 36px;
+  color: var(--blanco);
+}
+.afil-header h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; font-weight: 700; margin-bottom: 6px;
+}
+.afil-header p { font-size: 0.85rem; opacity: 0.75; }
+.afil-steps {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+.afil-step {
+  flex: 1; padding: 16px;
+  text-align: center; font-size: 0.82rem;
+  font-weight: 600; color: var(--gris);
+  border-right: 1px solid #e5e7eb;
+  transition: all 0.3s;
+}
+.afil-step:last-child { border-right: none; }
+.afil-step.active { color: var(--verde); background: rgba(26,74,46,0.04); }
+.afil-step .step-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #e5e7eb; color: var(--gris);
+  font-size: 0.75rem; font-weight: 700;
+  margin: 0 auto 6px;
+  transition: all 0.3s;
+}
+.afil-step.active .step-num { background: var(--verde); color: white; }
+.afil-body { padding: 36px; }
+.afil-panel { display: none; }
+.afil-panel.active { display: block; }
+
+.aviso-legal {
+  background: rgba(26,74,46,0.04);
+  border-left: 3px solid var(--verde);
+  padding: 16px 20px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 24px;
+  font-size: 0.83rem; color: var(--gris); line-height: 1.6;
+}
+
+.afil-nav { display: flex; gap: 12px; margin-top: 24px; }
+.btn-next {
+  flex: 1;
+  background: var(--verde);
+  color: var(--blanco);
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 0.9rem; font-weight: 700;
+  border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+.btn-next:hover { background: var(--verde-medio); }
+.btn-back {
+  padding: 13px 20px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  font-size: 0.9rem; font-weight: 600;
+  color: var(--gris); cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+.btn-back:hover { border-color: var(--verde); color: var(--verde); }
+
+/* FAQ */
+.faq { background: var(--gris-claro); }
+.faq-list { max-width: 720px; margin: 48px auto 0; }
+.faq-item {
+  background: var(--blanco);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+.faq-q {
+  width: 100%; text-align: left;
+  padding: 20px 24px;
+  background: none; border: none;
+  font-size: 0.95rem; font-weight: 600;
+  color: var(--verde); cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+.faq-q:hover { color: var(--verde-medio); }
+.faq-icon {
+  width: 24px; height: 24px; min-width: 24px;
+  border-radius: 50%;
+  background: rgba(26,74,46,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 700;
+  transition: transform 0.3s;
+}
+.faq-item.open .faq-icon { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.3s;
+  padding: 0 24px;
+  font-size: 0.88rem; color: var(--gris); line-height: 1.7;
+}
+.faq-item.open .faq-a { max-height: 300px; padding: 0 24px 20px; }
+
+/* FOOTER */
+footer {
+  background: #0d2b1a;
+  padding: 60px 40px 32px;
+  color: rgba(255,255,255,0.6);
+}
+.footer-grid {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 2fr 1fr 1fr;
+  gap: 60px; margin-bottom: 48px;
+}
+.footer-brand .footer-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem; font-weight: 700;
+  color: var(--dorado); margin-bottom: 12px;
+}
+.footer-brand p { font-size: 0.82rem; line-height: 1.6; max-width: 320px; }
+.footer-links h4 {
+  color: var(--blanco); font-size: 0.85rem; font-weight: 700;
+  margin-bottom: 16px; letter-spacing: 0.5px;
+}
+.footer-links ul { list-style: none; }
+.footer-links li { margin-bottom: 10px; }
+.footer-links a {
+  color: rgba(255,255,255,0.55); font-size: 0.82rem;
+  text-decoration: none; transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--dorado); }
+.footer-divider {
+  max-width: 1200px; margin: 0 auto;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 28px;
+}
+.legal-text {
+  font-size: 0.73rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.35);
+  max-width: 900px; margin: 0 auto;
+  text-align: center;
+}
+.legal-text strong { color: rgba(255,255,255,0.55); }
+
+/* DISCLAIMER BAND */
+.disclaimer-band {
+  background: rgba(200,169,81,0.12);
+  border-top: 1px solid rgba(200,169,81,0.2);
+  border-bottom: 1px solid rgba(200,169,81,0.2);
+  padding: 10px 40px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.45);
+  max-width: none;
+}
+
+/* RESPONSIVE */
+@media (max-width: 968px) {
+  nav { padding: 16px 20px; }
+  .nav-links { display: none; }
+  .hero { padding: 100px 20px 60px; }
+  .hero-content { grid-template-columns: 1fr; gap: 40px; }
+  .hero-card { display: none; }
+  section { padding: 72px 20px; }
+  .quien-grid, .form-grid { grid-template-columns: 1fr; gap: 40px; }
+  .ejes-grid { grid-template-columns: 1fr; }
+  .municipios-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+  .field-row { grid-template-columns: 1fr; }
+  .hero-stats { gap: 20px; }
+}
+
+/* SCROLL ANIMATIONS */
+.scroll-reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: all 0.6s ease;
+}
+.scroll-reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Dudú Naranjo <span>| Distrito XXI</span></div>
+  <ul class="nav-links">
+    <li><a href="#quien">Quién es</a></li>
+    <li><a href="#ejes">Agenda</a></li>
+    <li><a href="#territorio">Territorio</a></li>
+    <li><a href="#participa">Participa</a></li>
+    <li><a href="#afiliacion" class="nav-cta">Afiliación</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="inicio">
+  <div class="hero-content">
+    <div>
+      <div class="hero-tag">Distrito XXI · Guerrero · PVEM</div>
+      <h1>Pasión por<br><em>Servir</em></h1>
+      <p class="hero-subtitle">Participación ciudadana, justicia social y comunidad activa en Taxco, Pilcaya y Tetipac. Trabajando desde el territorio, para el territorio.</p>
+      <div class="hero-btns">
+        <a href="#participa" class="btn-primary">✦ Quiero participar</a>
+        <a href="#quien" class="btn-outline">Conoce a Dudú →</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">3</span>
+          <span class="stat-label">Municipios</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">6+</span>
+          <span class="stat-label">Años de servicio</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" id="hero-counter">0</span>
+          <span class="stat-label">Participantes</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="profile-avatar">DN</div>
+      <div class="profile-name">Obdulia Naranjo Cabrera</div>
+      <div class="profile-nick">"Dudú Naranjo"</div>
+      <div class="profile-cargo">
+        Diputada Local · LXIV Legislatura del Congreso de Guerrero<br>
+        Distrito XXI: Taxco · Pilcaya · Tetipac
+      </div>
+      <div class="profile-tags">
+        <span class="ptag">PVEM</span>
+        <span class="ptag">Educación</span>
+        <span class="ptag">Mujeres</span>
+        <span class="ptag">Turismo</span>
+        <span class="ptag">Niñez</span>
+      </div>
+      <div class="counter-live">
+        <span class="counter-num" id="live-counter">—</span>
+        <span class="counter-label">Personas participando<br>en el Distrito XXI</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUIÉN ES -->
+<section class="quien" id="quien">
+  <div class="container">
+    <div class="quien-grid">
+      <div>
+        <span class="section-tag">Perfil</span>
+        <h2>Una trayectoria construida desde adentro</h2>
+        <p class="lead">Taxqueña de origen, comprometida con el territorio. Obdulia "Dudú" Naranjo lleva más de una década de trabajo continuo en la región, siempre con las comunidades y sus necesidades como centro.</p>
+
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-year">2012</div>
+            <div class="tl-text">Candidata a Diputada Local por el Distrito 21, PVEM. Primera apuesta electoral por el territorio.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-year">2016</div>
+            <div class="tl-text">Secretaria de la Mujer del PVEM en Guerrero. Impulso a la participación política femenina en la entidad.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-year">2018–2021</div>
+            <div class="tl-text">Regidora en el Ayuntamiento de Taxco de Alarcón. Gestión directa de servicios públicos y desarrollo comunitario.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-year">2021–2024</div>
+            <div class="tl-text">Regidora reelecta en Taxco. Continuidad en proyectos de educación, turismo y participación ciudadana.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-year">Actual</div>
+            <div class="tl-text">Diputada Local de mayoría relativa, LXIV Legislatura. Grupo Parlamentario PVEM. Distrito XXI: Taxco, Pilcaya, Tetipac.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="quien-valores">
+          <div class="valor-card">
+            <div class="valor-icon">🌿</div>
+            <div class="valor-titulo">Identidad territorial</div>
+            <div class="valor-desc">Miembro activa de "Al rescate de las tradiciones de Taxco". La platería, la cultura y el patrimonio como motores de desarrollo.</div>
+          </div>
+          <div class="valor-card">
+            <div class="valor-icon">👩‍🤝‍👩</div>
+            <div class="valor-titulo">Red de mujeres</div>
+            <div class="valor-desc">Integrante de la Red para el Avance Político de las Mujeres en Guerrero. Formación y liderazgo femenino.</div>
+          </div>
+          <div class="valor-card">
+            <div class="valor-icon">📚</div>
+            <div class="valor-titulo">Educación y niñez</div>
+            <div class="valor-desc">Iniciativas legislativas para protección de la infancia y apoyo a escuelas rurales en comunidades del Distrito XXI.</div>
+          </div>
+          <div class="valor-card">
+            <div class="valor-icon">🏛️</div>
+            <div class="valor-titulo">Gestión legislativa</div>
+            <div class="valor-desc">Reforma al Código Penal de Guerrero para fortalecer protección a la niñez. Trabajo técnico con impacto real.</div>
+          </div>
+        </div>
+        <div style="margin-top:24px; padding:20px; background: rgba(26,74,46,0.04); border-radius:12px; border-left: 3px solid var(--verde);">
+          <p style="font-size:0.9rem; color:var(--gris); line-height:1.7; font-style:italic;">"Mi trabajo se centra en fortalecer la educación, la protección de la infancia, el turismo responsable y la participación de las mujeres en la vida pública, desde la visión del Partido Verde."</p>
+          <p style="font-size:0.8rem; color:var(--verde); font-weight:600; margin-top:10px;">— Obdulia "Dudú" Naranjo Cabrera</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EJES -->
+<section class="ejes" id="ejes">
+  <div class="container">
+    <div style="text-align:center; max-width:600px; margin:0 auto;">
+      <span class="section-tag">Agenda de trabajo</span>
+      <h2>Los cinco ejes que guían la acción</h2>
+      <p class="lead" style="margin: 0 auto;">Cinco áreas concretas de trabajo legislativo, territorial y comunitario en el Distrito XXI.</p>
+    </div>
+    <div class="ejes-grid">
+      <div class="eje-card scroll-reveal">
+        <span class="eje-emoji">📚</span>
+        <div class="eje-titulo">Educación y tecnología</div>
+        <div class="eje-desc">Acceso a herramientas digitales en comunidades rurales. Apoyo directo a escuelas primarias y secundarias en Taxco, Pilcaya y Tetipac. Formación continua para maestros y jóvenes.</div>
+      </div>
+      <div class="eje-card scroll-reveal">
+        <span class="eje-emoji">👩‍⚖️</span>
+        <div class="eje-titulo">Participación de las mujeres</div>
+        <div class="eje-desc">Programas de liderazgo, organización territorial y capacitación política para mujeres de la región. Espacios seguros de participación comunitaria y política.</div>
+      </div>
+      <div class="eje-card scroll-reveal">
+        <span class="eje-emoji">🏺</span>
+        <div class="eje-titulo">Turismo y platería</div>
+        <div class="eje-desc">Taxco, capital mundial de la plata. Fortalecimiento del sector turístico en los tres municipios como motor de empleo formal y desarrollo económico regional sustentable.</div>
+      </div>
+      <div class="eje-card scroll-reveal">
+        <span class="eje-emoji">🧒</span>
+        <div class="eje-titulo">Protección a la niñez</div>
+        <div class="eje-desc">Marco legal reforzado para proteger a niñas, niños y adolescentes. Reforma al Código Penal de Guerrero. Actividades comunitarias enfocadas en bienestar infantil.</div>
+      </div>
+      <div class="eje-card scroll-reveal">
+        <span class="eje-emoji">🌱</span>
+        <div class="eje-titulo">Justicia social y comunidad</div>
+        <div class="eje-desc">Gestión de servicios básicos, acceso a programas sociales y fortalecimiento del tejido comunitario. Trabajo territorial directo con colonias, barrios y comunidades rurales.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TERRITORIO -->
+<section class="territorio" id="territorio">
+  <div class="container" style="position:relative;z-index:1;">
+    <span class="section-tag">El Distrito XXI</span>
+    <h2>Tres municipios,<br>un mismo compromiso</h2>
+    <p class="lead">Taxco de Alarcón, Pilcaya y Tetipac conforman el Distrito XXI. Cada municipio tiene su identidad, sus necesidades y su potencial. El trabajo se hace desde adentro, con la gente.</p>
+    <div class="municipios-grid">
+      <div class="muni-card scroll-reveal">
+        <span class="muni-num">01</span>
+        <div class="muni-nombre">Taxco de Alarcón</div>
+        <div class="muni-desc">Ciudad histórica y capital mundial de la plata. Centro turístico, cultural y económico del Distrito. Sede principal de actividades legislativas y comunitarias.</div>
+        <div class="muni-tags">
+          <span class="muni-tag">Platería</span>
+          <span class="muni-tag">Turismo</span>
+          <span class="muni-tag">Cultura</span>
+          <span class="muni-tag">Centro urbano</span>
+        </div>
+      </div>
+      <div class="muni-card scroll-reveal">
+        <span class="muni-num">02</span>
+        <div class="muni-nombre">Pilcaya</div>
+        <div class="muni-desc">Municipio de vocación rural y agrícola. Comunidades con necesidades de conectividad, servicios educativos y desarrollo de infraestructura básica.</div>
+        <div class="muni-tags">
+          <span class="muni-tag">Comunidades rurales</span>
+          <span class="muni-tag">Educación</span>
+          <span class="muni-tag">Agricultura</span>
+        </div>
+      </div>
+      <div class="muni-card scroll-reveal">
+        <span class="muni-num">03</span>
+        <div class="muni-nombre">Tetipac</div>
+        <div class="muni-desc">Municipio con riqueza natural y capital social activo. Potencial turístico y comunitario por desarrollar. Presencia de organizaciones de base y vida comunitaria sólida.</div>
+        <div class="muni-tags">
+          <span class="muni-tag">Naturaleza</span>
+          <span class="muni-tag">Comunidad</span>
+          <span class="muni-tag">Turismo rural</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULARIO PARTICIPA -->
+<section class="participa" id="participa">
+  <div class="container">
+    <div class="form-grid">
+      <div class="form-info">
+        <span class="section-tag">Participación ciudadana</span>
+        <h3>Únete a las actividades del Partido Verde en el Distrito XXI</h3>
+        <p>¿Quieres recibir información sobre cursos, talleres, jornadas comunitarias y actividades formativas del PVEM en tu municipio? Déjanos tus datos y nos ponemos en contacto contigo.</p>
+        <p style="font-size:0.85rem;">La participación es libre y voluntaria. Puedes solicitar que eliminemos tus datos en cualquier momento escribiéndonos directamente.</p>
+        <ul class="form-beneficios">
+          <li>Información sobre actividades en tu comunidad</li>
+          <li>Talleres de formación política y ciudadana</li>
+          <li>Jornadas comunitarias de educación y salud</li>
+          <li>Red de voluntariado en el Distrito XXI</li>
+          <li>Boletín informativo (con tu consentimiento)</li>
+        </ul>
+      </div>
+
+      <div class="form-box">
+        <div id="form-content">
+          <div class="form-title">Quiero participar</div>
+          <div class="form-subtitle">Completa el formulario — te contactaremos en un máximo de 72 horas</div>
+
+          <form id="formParticipa" novalidate>
+            <div class="field-row">
+              <div class="field">
+                <label>Nombre(s) <span>*</span></label>
+                <input type="text" id="nombres" placeholder="Ej. María Elena" minlength="2" maxlength="60" required>
+                <span class="error-msg">Ingresa tu nombre (mínimo 2 caracteres, solo letras)</span>
+              </div>
+              <div class="field">
+                <label>Apellido paterno <span>*</span></label>
+                <input type="text" id="apellido_paterno" placeholder="Ej. González" required>
+                <span class="error-msg">Este campo es obligatorio</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label>Apellido materno</label>
+                <input type="text" id="apellido_materno" placeholder="Opcional">
+              </div>
+              <div class="field">
+                <label>Teléfono móvil <span>*</span></label>
+                <input type="tel" id="telefono" placeholder="10 dígitos" maxlength="10" required>
+                <span class="error-msg">Ingresa un teléfono de 10 dígitos</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label>Municipio <span>*</span></label>
+                <select id="municipio" required>
+                  <option value="">Selecciona...</option>
+                  <option>Taxco de Alarcón</option>
+                  <option>Pilcaya</option>
+                  <option>Tetipac</option>
+                  <option>Otro en Guerrero</option>
+                </select>
+                <span class="error-msg">Selecciona tu municipio</span>
+              </div>
+              <div class="field">
+                <label>Colonia / Comunidad <span>*</span></label>
+                <input type="text" id="colonia" placeholder="Ej. Centro, El Huixteco..." required>
+                <span class="error-msg">Ingresa tu colonia o comunidad</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Intereses principales <span>*</span></label>
+              <div class="intereses-grid" id="intereses-grid">
+                <button type="button" class="interes-btn" data-val="Educación">📚 Educación</button>
+                <button type="button" class="interes-btn" data-val="Mujeres">👩 Participación de Mujeres</button>
+                <button type="button" class="interes-btn" data-val="Turismo">🏺 Turismo y Platería</button>
+                <button type="button" class="interes-btn" data-val="Medio ambiente">🌿 Medio Ambiente</button>
+                <button type="button" class="interes-btn" data-val="Juventud">🎓 Juventud</button>
+                <button type="button" class="interes-btn" data-val="Gestión social">🤝 Gestión Social</button>
+                <button type="button" class="interes-btn" data-val="Formación política">🏛️ Formación Política</button>
+                <button type="button" class="interes-btn" data-val="Observación ciudadana">👁️ Observación Ciudadana</button>
+              </div>
+              <span class="error-msg" id="intereses-error" style="display:none">Selecciona al menos una opción</span>
+            </div>
+
+            <div class="field">
+              <label>Sección electoral (opcional)</label>
+              <input type="number" id="seccion" placeholder="Ej. 2181" min="1" max="9999">
+            </div>
+
+            <div class="field">
+              <label>¿Cómo te enteraste?</label>
+              <select id="como_se_entero">
+                <option value="">Selecciona...</option>
+                <option>Redes sociales</option>
+                <option>Un conocido</option>
+                <option>Evento comunitario</option>
+                <option>WhatsApp</option>
+                <option>Otro</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Mensaje (opcional)</label>
+              <textarea id="mensaje" placeholder="¿Hay algo que quieras compartirnos? (máx. 500 caracteres)" maxlength="500" rows="3" style="resize:none;"></textarea>
+            </div>
+
+            <div class="checkbox-field">
+              <input type="checkbox" id="voluntario">
+              <label for="voluntario">Me gustaría ser voluntario/a en actividades del Distrito XXI</label>
+            </div>
+
+            <div class="checkbox-field">
+              <input type="checkbox" id="acepta_aviso" required>
+              <label for="acepta_aviso">He leído y acepto el <a href="#aviso-privacidad">Aviso de Privacidad</a>. Entiendo que mis datos se usarán para contactarme sobre actividades comunitarias y formativas del PVEM en el Distrito XXI. <span style="color:#e63946">*</span></label>
+            </div>
+
+            <button type="submit" class="btn-submit" id="btn-enviar">
+              <span id="btn-text">✦ Enviar solicitud</span>
+            </button>
+          </form>
+        </div>
+        <div class="success-box" id="success-box">
+          <div class="success-icon">✅</div>
+          <h3>¡Registro recibido!</h3>
+          <p>Gracias por tu interés. Alguien del equipo del Distrito XXI se pondrá en contacto contigo en un máximo de 72 horas para informarte sobre actividades en tu comunidad.<br><br><strong>Tu participación es voluntaria y puedes cancelarla cuando quieras.</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AFILIACIÓN -->
+<section class="afiliacion" id="afiliacion">
+  <div class="container" style="text-align:center;">
+    <span class="section-tag">Afiliación voluntaria</span>
+    <h2>Únete formalmente al PVEM</h2>
+    <p class="lead" style="margin:0 auto 16px;">La afiliación a un partido político es un derecho libre, voluntario e individual, reconocido por la Constitución. Puedes desafiliarte cuando quieras.</p>
+    <p style="font-size:0.82rem; color:var(--gris); margin-bottom:0;">Esta ruta está separada del formulario de participación. Es un proceso distinto con sus propios consentimientos.</p>
+
+    <div class="afiliacion-box">
+      <div class="afil-header">
+        <h3>Proceso de afiliación voluntaria al PVEM</h3>
+        <p>Dos pasos simples. Puedes abandonar el proceso en cualquier momento.</p>
+      </div>
+      <div class="afil-steps">
+        <div class="afil-step active" id="step-ind-1">
+          <div class="step-num">1</div>
+          Consentimiento informado
+        </div>
+        <div class="afil-step" id="step-ind-2">
+          <div class="step-num">2</div>
+          Datos para el padrón
+        </div>
+      </div>
+      <div class="afil-body">
+
+        <!-- PASO A -->
+        <div class="afil-panel active" id="panel-1">
+          <div class="aviso-legal">
+            <strong>Sobre la afiliación al PVEM:</strong> La afiliación es un acto libre, personal e individual. No estás obligado/a por ninguna persona o circunstancia. Puedes desafiliarte en cualquier momento solicitándolo al partido. Tu afiliación implica que tus datos serán transferidos al INE exclusivamente para verificar el cumplimiento de los requisitos establecidos por la Ley General de Partidos Políticos (art. 57). Los datos serán tratados con confidencialidad y en términos del Aviso de Privacidad Integral.
+          </div>
+
+          <div class="checkbox-field">
+            <input type="checkbox" id="afil_libre">
+            <label for="afil_libre"><strong>Confirmo que deseo afiliarme al PVEM de manera libre, voluntaria e individual,</strong> sin presión de ningún tipo y con pleno conocimiento de mis derechos.</label>
+          </div>
+          <div class="checkbox-field">
+            <input type="checkbox" id="afil_ine">
+            <label for="afil_ine">Estoy de acuerdo en que mis datos personales proporcionados para afiliarme al PVEM sean <strong>transferidos al INE</strong> para verificar el cumplimiento de los requisitos de afiliación, conforme a los lineamientos del INE sobre verificación de padrones de militantes.</label>
+          </div>
+          <div class="checkbox-field">
+            <input type="checkbox" id="afil_privacidad">
+            <label for="afil_privacidad">He leído y acepto el <a href="#aviso-privacidad">Aviso de Privacidad Integral</a>. Entiendo la finalidad del tratamiento, los plazos de conservación y mis derechos ARCO.</label>
+          </div>
+
+          <div class="afil-nav">
+            <button class="btn-next" onclick="siguientePaso()">Continuar al Paso 2 →</button>
+          </div>
+        </div>
+
+        <!-- PASO B -->
+        <div class="afil-panel" id="panel-2">
+          <form id="formAfiliacion" novalidate>
+            <div class="field-row">
+              <div class="field">
+                <label>Nombre(s) <span>*</span></label>
+                <input type="text" id="afil_nombres" placeholder="Como aparece en tu INE" required>
+              </div>
+              <div class="field">
+                <label>Apellido paterno <span>*</span></label>
+                <input type="text" id="afil_ap" required>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Apellido materno</label>
+                <input type="text" id="afil_am" placeholder="Opcional">
+              </div>
+              <div class="field">
+                <label>Clave de elector <span>*</span></label>
+                <input type="text" id="afil_clave" placeholder="18 caracteres" maxlength="18" required style="letter-spacing:1px; text-transform:uppercase;">
+                <span class="error-msg">La clave de elector tiene 18 caracteres alfanuméricos</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Entidad</label>
+                <input type="text" value="Guerrero" disabled style="opacity:0.6;">
+              </div>
+              <div class="field">
+                <label>Municipio <span>*</span></label>
+                <select id="afil_municipio" required>
+                  <option value="">Selecciona...</option>
+                  <option>Taxco de Alarcón</option>
+                  <option>Pilcaya</option>
+                  <option>Tetipac</option>
+                  <option>Otro en Guerrero</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Teléfono móvil <span>*</span></label>
+              <input type="tel" id="afil_tel" placeholder="10 dígitos" maxlength="10" required>
+            </div>
+            <div class="checkbox-field">
+              <input type="checkbox" id="afil_no_otro">
+              <label for="afil_no_otro">Declaro que, según mi conocimiento, no me encuentro afiliado/a a otro partido político.</label>
+            </div>
+
+            <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:0.78rem; color:#856404; line-height:1.5;">
+              <strong>⚠️ Nota sobre tu clave de elector:</strong> Este dato se almacena cifrado y solo se transmite al INE para verificación del padrón. No se comparte con terceros. Tienes derecho a solicitar su eliminación en cualquier momento.
+            </div>
+
+            <div class="afil-nav">
+              <button type="button" class="btn-back" onclick="pasoAnterior()">← Atrás</button>
+              <button type="submit" class="btn-next" id="btn-afiliar">Enviar solicitud de afiliación</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div style="text-align:center;">
+      <span class="section-tag">Preguntas frecuentes</span>
+      <h2>Lo que necesitas saber</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          ¿Este sitio me pide el voto o me solicita apoyar una candidatura?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">No. Este sitio es de carácter estrictamente informativo. No contiene propaganda electoral, no solicita el voto ni difunde mensajes en favor o en contra de ninguna candidatura o partido. Está orientado a la participación ciudadana y actividades comunitarias del PVEM en el Distrito XXI.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          ¿La participación y la afiliación son obligatorias o tienen algún costo?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">No. Tanto la participación en actividades como la afiliación al partido son completamente libres, voluntarias y gratuitas. Nadie puede presionarte ni condicionarte. Puedes retirarte del padrón de simpatizantes o solicitar tu desafiliación en cualquier momento.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          ¿Qué hacen con mis datos personales?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">Tus datos se usan exclusivamente para contactarte sobre actividades comunitarias, formativas y de participación del PVEM en el Distrito XXI. No se venden ni se comparten con terceros sin tu consentimiento, excepto la transferencia al INE en el caso de afiliación formal (requerida por ley). Tienes derechos ARCO (Acceso, Rectificación, Cancelación y Oposición).</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          ¿Puedo desafiliarme del partido si cambio de opinión?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">Sí. La desafiliación es un derecho. Puedes solicitarla en cualquier momento al PVEM. Tu afiliación puede revocarse conforme a los estatutos del partido y la legislación aplicable en materia de partidos políticos.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          ¿Dónde puedo conocer más sobre las actividades legislativas de la Diputada Naranjo?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">Puedes consultar el portal del Congreso del Estado de Guerrero, donde se publican las iniciativas, dictámenes y participaciones de todos los legisladores. La información presentada en este sitio es responsabilidad de la Diputada Obdulia Naranjo Cabrera, en cumplimiento de sus funciones legislativas conforme al marco legal del Congreso del Estado de Guerrero.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="aviso-privacidad">
+  <div class="disclaimer-band">
+    ⚖️ Sitio informativo. No contiene propaganda electoral ni solicita el voto. Material de participación ciudadana y actividades comunitarias — PVEM Distrito XXI Guerrero.
+  </div>
+  <div style="height:32px;"></div>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="footer-logo">Dudú Naranjo · Distrito XXI</div>
+      <p>Participación ciudadana, organización territorial y agenda social en Taxco de Alarcón, Pilcaya y Tetipac. Guerrero, México.</p>
+      <p style="margin-top:12px; font-size:0.75rem;">La información presentada es responsabilidad de la Diputada Obdulia Naranjo Cabrera, en cumplimiento de sus funciones legislativas conforme al marco legal del Congreso del Estado de Guerrero.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Navegación</h4>
+      <ul>
+        <li><a href="#quien">Quién es</a></li>
+        <li><a href="#ejes">Agenda de trabajo</a></li>
+        <li><a href="#territorio">El Distrito XXI</a></li>
+        <li><a href="#participa">Participar</a></li>
+        <li><a href="#afiliacion">Afiliación voluntaria</a></li>
+        <li><a href="#faq">Preguntas frecuentes</a></li>
+      </ul>
+    </div>
+    <div class="footer-links">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="#">Aviso de privacidad integral</a></li>
+        <li><a href="#">Derechos ARCO</a></li>
+        <li><a href="#">Términos de uso</a></li>
+        <li><a href="https://congresogro.gob.mx" target="_blank">Congreso de Guerrero</a></li>
+        <li><a href="https://pvem.org.mx" target="_blank">PVEM Nacional</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-divider">
+    <div class="legal-text">
+      <strong>Aviso de privacidad (resumen):</strong> El responsable del tratamiento de datos es [PENDIENTE — nombre del responsable designado y correo oficial]. Los datos personales recabados se utilizan para: contactar a simpatizantes y voluntarios sobre actividades del PVEM en el Distrito XXI, organización territorial interna y, en el caso de afiliación, transferencia al INE para verificación del padrón conforme al art. 57 de la Ley General de Partidos Políticos. Conservación: máximo 4 años o hasta que solicites la cancelación. Derechos ARCO: escríbenos a [PENDIENTE — correo oficial] con asunto "Derechos ARCO". Última actualización: Febrero 2026.
+      <br><br>
+      <strong>Nota electoral:</strong> Este sitio no constituye acto de campaña, precampaña ni proselitismo electoral anticipado. No solicita el voto ni difunde propaganda a favor o en contra de persona, partido o coalición alguna. Contenido de carácter informativo y de participación interna conforme a la legislación electoral vigente del Estado de Guerrero.
+    </div>
+  </div>
+</footer>
+
+<script>
+const API = 'https://taxco-backend-api.onrender.com/api';
+
+// COUNTER ANIMADO
+function animarContador(el, destino, duracion=1200) {
+  let inicio = 0, step = duracion/60;
+  let t = setInterval(() => {
+    inicio += destino/60;
+    el.textContent = Math.floor(inicio).toLocaleString('es-MX');
+    if(inicio >= destino) { el.textContent = destino.toLocaleString('es-MX'); clearInterval(t); }
+  }, step);
+}
+
+// Cargar KPIs reales
+async function cargarKpis() {
+  try {
+    const r = await fetch(`${API}/afiliados/kpis`);
+    const d = await r.json();
+    const total = d.total || 0;
+    animarContador(document.getElementById('hero-counter'), total);
+    animarContador(document.getElementById('live-counter'), total);
+  } catch(e) {
+    document.getElementById('hero-counter').textContent = '—';
+    document.getElementById('live-counter').textContent = '—';
+  }
+}
+cargarKpis();
+
+// INTERESES MULTI-SELECT
+const intereses = [];
+document.querySelectorAll('.interes-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const v = btn.dataset.val;
+    const idx = intereses.indexOf(v);
+    if(idx > -1) { intereses.splice(idx,1); btn.classList.remove('active'); }
+    else { intereses.push(v); btn.classList.add('active'); }
+  });
+});
+
+// FORM PARTICIPA
+document.getElementById('formParticipa').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const nombres = document.getElementById('nombres').value.trim();
+  const apellido = document.getElementById('apellido_paterno').value.trim();
+  const tel = document.getElementById('telefono').value.trim();
+  const mun = document.getElementById('municipio').value;
+  const col = document.getElementById('colonia').value.trim();
+  const aviso = document.getElementById('acepta_aviso').checked;
+
+  if(!nombres || nombres.length < 2 || !apellido || !/^\d{10}$/.test(tel) || !mun || col.length < 2 || !aviso || intereses.length === 0) {
+    if(intereses.length === 0) document.getElementById('intereses-error').style.display='block';
+    alert('Por favor completa todos los campos obligatorios correctamente.');
+    return;
+  }
+  document.getElementById('intereses-error').style.display='none';
+
+  const btn = document.getElementById('btn-enviar');
+  btn.disabled = true;
+  document.getElementById('btn-text').textContent = 'Enviando...';
+
+  try {
+    const payload = {
+      nombre_completo: `${nombres} ${apellido} ${document.getElementById('apellido_materno').value}`.trim(),
+      telefono: tel,
+      municipio: mun,
+      colonia: col,
+      seccion_electoral: parseInt(document.getElementById('seccion').value) || null,
+      temas_interes: intereses,
+      como_se_entero: document.getElementById('como_se_entero').value || null,
+      tipo_participacion: document.getElementById('voluntario').checked ? 'Voluntario' : 'Simpatizante',
+      acepta_aviso: true,
+      acepta_contacto: true
+    };
+    const r = await fetch(`${API}/afiliados`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if(d.ok || d.duplicado) {
+      document.getElementById('form-content').style.display = 'none';
+      document.getElementById('success-box').style.display = 'block';
+      cargarKpis();
+    } else {
+      throw new Error(d.mensaje);
+    }
+  } catch(err) {
+    alert('Ocurrió un error al enviar. Por favor intenta de nuevo.');
+    btn.disabled = false;
+    document.getElementById('btn-text').textContent = '✦ Enviar solicitud';
+  }
+});
+
+// WIZARD AFILIACIÓN
+function siguientePaso() {
+  const checks = ['afil_libre','afil_ine','afil_privacidad'];
+  if(!checks.every(id => document.getElementById(id).checked)) {
+    alert('Debes aceptar los tres consentimientos para continuar.');
+    return;
+  }
+  document.getElementById('panel-1').classList.remove('active');
+  document.getElementById('panel-2').classList.add('active');
+  document.getElementById('step-ind-1').classList.remove('active');
+  document.getElementById('step-ind-2').classList.add('active');
+}
+function pasoAnterior() {
+  document.getElementById('panel-2').classList.remove('active');
+  document.getElementById('panel-1').classList.add('active');
+  document.getElementById('step-ind-2').classList.remove('active');
+  document.getElementById('step-ind-1').classList.add('active');
+}
+
+document.getElementById('formAfiliacion').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const clave = document.getElementById('afil_clave').value.trim();
+  if(clave.length !== 18) { alert('La clave de elector debe tener 18 caracteres.'); return; }
+  const btn = document.getElementById('btn-afiliar');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const payload = {
+      nombre_completo: `${document.getElementById('afil_nombres').value} ${document.getElementById('afil_ap').value} ${document.getElementById('afil_am').value}`.trim(),
+      telefono: document.getElementById('afil_tel').value.trim(),
+      municipio: document.getElementById('afil_municipio').value,
+      tipo_participacion: 'Militante',
+      acepta_aviso: true,
+      acepta_contacto: true,
+      como_se_entero: 'Afiliación directa'
+    };
+    const r = await fetch(`${API}/afiliados`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    alert(d.duplicado ? 'Ya existe un registro con ese número en tu municipio.' : '✅ Solicitud de afiliación enviada. El equipo del PVEM Distrito XXI te contactará para completar el proceso oficial.');
+  } catch { alert('Error de conexión. Por favor intenta de nuevo.'); }
+  btn.disabled = false; btn.textContent = 'Enviar solicitud de afiliación';
+});
+
+// FAQ
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if(!isOpen) item.classList.add('open');
+}
+
+// SCROLL ANIMATIONS
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.scroll-reveal, .tl-item, .eje-card, .muni-card').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
